@@ -9,7 +9,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 
-package NESPack is
+package NES_Pack is
     
     component NES_2A03 is
         port (
