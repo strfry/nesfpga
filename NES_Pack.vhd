@@ -1,13 +1,6 @@
---------------------------------------------------------------------------------
--- Entity: NESPack
--- Date:2011-10-25  
--- Author: jonathansieber     
---
--- Description ${cursor}
---------------------------------------------------------------------------------
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.std_logic_arith.all;
+library IEEE;
+use IEEE.std_logic_1164.all;
+use IEEE.numeric_std.all;
 
 package NES_Pack is
     
