@@ -1,0 +1,45 @@
+# This file is a general .ucf for Genesys rev C board
+# To use it in a project:
+# - remove or comment the lines corresponding to unused pins
+# - rename the used signals according to the project
+
+# clock pin for Genesys rev C board
+#TIMESPEC TS_clk = PERIOD clk 100000 kHz;
+ NET "clk"   LOC = "AG18"; # Bank = 4, Pin name = IO_L6P_GC_4, Type = GCLK, Sch name = GCLK0
+ NET "rstn"   LOC = "E7" |IOSTANDARD = LVCMOS25 |PULLUP;
+
+# onboard HDMI
+ NET "HDMIHSYNC"  LOC = "H8"	|IOSTANDARD = LVCMOS33;			# Bank = 20, Pin name = IO_L3N_20,       Sch name = HDMI-H    
+ NET "HDMIVSYNC"  LOC = "F13" |IOSTANDARD = LVCMOS33;		# Bank = 20, Pin name = IO_L19P_20,      Sch name = HDMI-V      
+ NET "HDMIDE"     LOC = "V10" |IOSTANDARD = LVCMOS33;    # Bank = 18, Pin name = IO_L19P_18,      Sch name = HDMI-DE      
+ NET "HDMICLKP"   LOC = "K11" |IOSTANDARD = LVCMOS33 |DRIVE = 24 |SLEW = FAST;    # Bank = 20, Pin name = IO_L5P_20,       Sch name = HDMI-CLK_P      
+ NET "HDMICLKN"   LOC = "J11" |IOSTANDARD = LVCMOS33 |DRIVE = 24 |SLEW = FAST;    # Bank = 20, Pin name = IO_L5N_20,       Sch name = HDMI-CLK_N      
+ NET "HDMID<0>"   LOC = "G10" |IOSTANDARD = LVCMOS33;    # Bank = 20, Pin name = IO_L2N_20,       Sch name = HDMI-D0      
+ NET "HDMID<1>"   LOC = "G8" |IOSTANDARD = LVCMOS33;     # Bank = 20, Pin name = IO_L3P_20,       Sch name = HDMI-D1      
+ NET "HDMID<2>"   LOC = "B12" |IOSTANDARD = LVCMOS33;    # Bank = 20, Pin name = IO_L8N_CC_20,    Sch name = HDMI-D2      
+ NET "HDMID<3>"   LOC = "D12" |IOSTANDARD = LVCMOS33;    # Bank = 20, Pin name = IO_L6P_20,       Sch name = HDMI-D3      
+ NET "HDMID<4>"   LOC = "C12" |IOSTANDARD = LVCMOS33;    # Bank = 20, Pin name = IO_L6N_20,       Sch name = HDMI-D4     
+ NET "HDMID<5>"   LOC = "D11" |IOSTANDARD = LVCMOS33;    # Bank = 20, Pin name = IO_L4P_20,       Sch name = HDMI-D5      
+ NET "HDMID<6>"   LOC = "F10" |IOSTANDARD = LVCMOS33;    # Bank = 20, Pin name = IO_L2P_20,       Sch name = HDMI-D6      
+ NET "HDMID<7>"   LOC = "D10" |IOSTANDARD = LVCMOS33;    # Bank = 20, Pin name = IO_L4N_VREF_20,  Sch name = HDMI-D7      
+ NET "HDMID<8>"   LOC = "E9" |IOSTANDARD = LVCMOS33;     # Bank = 20, Pin name = IO_L0P_20,       Sch name = HDMI-D8      
+ NET "HDMID<9>"   LOC = "F9" |IOSTANDARD = LVCMOS33;     # Bank = 20, Pin name = IO_L1P_20,       Sch name = HDMI-D9      
+ NET "HDMID<10>"  LOC = "E8" |IOSTANDARD = LVCMOS33;     # Bank = 20, Pin name = IO_L0N_20,       Sch name = HDMI-D10      
+ NET "HDMID<11>"  LOC = "F8" |IOSTANDARD = LVCMOS33;     # Bank = 20, Pin name = IO_L1N_20,       Sch name = HDMI-D11      
+ NET "HDMISCL"    LOC = "U8" |IOSTANDARD = LVCMOS33 |PULLUP;     # Bank = 18, Pin name = IO_L17N_18,      Sch name = I2C-SCL      
+ NET "HDMISDA"    LOC = "V8" |IOSTANDARD = LVCMOS33 |PULLUP;     # Bank = 18, Pin name = IO_L17P_18,      Sch name = I2C-SDA 
+ #NET "HDMIHPINT"  LOC = "W9" | IOSTANDARD = LVCMOS33;     # Bank = 18, Pin name = IO_L15N_18,      Sch name = HDMI-HPINT    
+ NET "HDMIRSTN"   LOC = "AF23" |IOSTANDARD = LVCMOS33 |PULLUP;   # Bank = 2,  Pin name = IO_L1P_CC_A25_2, Sch name = HDMI-RST 
+ NET "Led<0>"  LOC = "AG8";  # Bank = 22, Pin name = IO_L18P_22,     Sch name = LD0
+ NET "Led<1>"  LOC = "AH8";  # Bank = 22, Pin name = IO_L18N_22,     Sch name = LD1
+ NET "Led<2>"  LOC = "AH9";  # Bank = 22, Pin name = IO_L17P_22,     Sch name = LD2
+ NET "Led<3>"  LOC = "AG10"; # Bank = 22, Pin name = IO_L19P_22,     Sch name = LD3
+ NET "Led<4>"  LOC = "AH10"; # Bank = 22, Pin name = IO_L17N_22,     Sch name = LD4
+ NET "Led<5>"  LOC = "AG11"; # Bank = 22, Pin name = IO_L19N_22,     Sch name = LD5
+ NET "Led<6>"  LOC = "AF11"; # Bank = 22, Pin name = IO_L16P_22,     Sch name = LD6
+ NET "Led<7>"  LOC = "AE11"; # Bank = 22, Pin name = IO_L16N_22,     Sch name = LD7
+ NET "BTN<0>"	LOC = "G6";
+ NET "BTN<1>"  LOC = "G7";
+#Created by Constraints Editor (xc5vlx50t-ff1136-2) - 2011/10/07
+NET "CLK" TNM_NET = CLK;
+TIMESPEC TS_CLK = PERIOD "CLK" 100 MHz HIGH 50%;
