@@ -29,8 +29,8 @@ entity NES_2C02 is
 		VBlank_n : out std_logic; -- Tied to the CPU's Non-Maskable Interrupt (NMI)		
 		
 		-- Framebuffer output
-        FB_Adress : out unsigned(15 downto 0); -- linear index in 256x240 pixel framebuffer
-		FB_Color : out unsigned(5 downto 0); -- Palette index of current color
+        FB_Address : out std_logic_vector(15 downto 0); -- linear index in 256x240 pixel framebuffer
+		FB_Color : out std_logic_vector(5 downto 0); -- Palette index of current color
 		FB_DE : out std_logic    -- True when PPU is writing to the framebuffer
 	);
 end NES_2C02;

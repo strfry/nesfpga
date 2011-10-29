@@ -7,14 +7,16 @@
 --------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
-use IEEE.numeric_std.all;
+use ieee.std_logic_unsigned.all;
 
 use work.NES_Pack.all;
 
 entity nes_top is
 	port  (
 		clk : in std_logic;        -- input clock, xx MHz.
-		Reset_n : in std_logic
+		rstn : in std_logic
+		
+		--HDMICLK
 	);
 end nes_top;
 
@@ -27,7 +29,25 @@ architecture arch of nes_top is
     signal CPU_Data : std_logic_vector(7 downto 0);
    
     signal CPU_PPU_Data : std_logic_vector(7 downto 0); 
-    signal PPU_CS_n : std_logic;
+    signal CPU_PPU_CS_n : std_logic;
+    signal CPU_RW : std_logic;
+    
+    
+    signal PPU_Address : std_logic_vector(15 downto 0);
+    signal PPU_Data : std_logic_vector(7 downto 0);
+    -- signal PPU_RW : std_logic;
+    
+
+    signal PPU_FB_Address : std_logic_vector(15 downto 0);
+    signal PPU_FB_Color : std_logic_vector(5 downto 0);
+    signal PPU_FB_DE : std_logic;
+    
+    signal HDMI_FB_Address : std_logic_vector(15 downto 0);
+    signal HDMI_FB_Color : std_logic_vector(5 downto 0);
+    
+    type fb_ram_type is array(0 to 256 * 224) of std_logic_vector(5 downto 0);
+    
+    signal fb_ram : fb_ram_type;
 
 begin
 
@@ -38,16 +58,26 @@ begin
         if CPU_RW = '1' and PPU_CS_n = '0' then
             CPU_Data <= PPU_CPU_Data;
         else 
-            CPU_Data <= (others => "Z");
+            CPU_Data <= (others => 'Z');
         end if;
     end process; 
+    
+    process (Nes_Clk) 
+    begin
+        if rising_edge(Nes_Clk) then
+            if PPU_FB_DE = '1' then
+                fb_ram(conv_integer(PPU_FB_Address)) <= PPU_FB_Color;
+            end if;
+        end if;
+    end process;
+    
 
     CPU: NES_2A03
     port map (
         Global_Clk => NES_Clk,
-        Reset_N => Reset_n,
+        Reset_N => rst,
         NMI_N => VBlank_NMI_n,
-        IRQ_N => "1",
+        IRQ_N => '1',
         
         Data => CPU_Data,
         Address => CPU_Address,
@@ -87,8 +117,8 @@ begin
         Data_in => CPU_Data,
         Data_out => CPU_PPU_Data,
         
-        -- VRAM/VROM bus
-        --foo
+        PPU_Address => PPU_Address,
+        PPU_Data => PPU_Data,
         
         VBlank_n => VBlank_NMI_n,
         FB_Address => FB_Address,
