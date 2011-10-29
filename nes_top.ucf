@@ -30,16 +30,16 @@
  NET "HDMISDA"    LOC = "V8" |IOSTANDARD = LVCMOS33 |PULLUP;     # Bank = 18, Pin name = IO_L17P_18,      Sch name = I2C-SDA 
  #NET "HDMIHPINT"  LOC = "W9" | IOSTANDARD = LVCMOS33;     # Bank = 18, Pin name = IO_L15N_18,      Sch name = HDMI-HPINT    
  NET "HDMIRSTN"   LOC = "AF23" |IOSTANDARD = LVCMOS33 |PULLUP;   # Bank = 2,  Pin name = IO_L1P_CC_A25_2, Sch name = HDMI-RST 
- NET "Led<0>"  LOC = "AG8";  # Bank = 22, Pin name = IO_L18P_22,     Sch name = LD0
- NET "Led<1>"  LOC = "AH8";  # Bank = 22, Pin name = IO_L18N_22,     Sch name = LD1
- NET "Led<2>"  LOC = "AH9";  # Bank = 22, Pin name = IO_L17P_22,     Sch name = LD2
- NET "Led<3>"  LOC = "AG10"; # Bank = 22, Pin name = IO_L19P_22,     Sch name = LD3
- NET "Led<4>"  LOC = "AH10"; # Bank = 22, Pin name = IO_L17N_22,     Sch name = LD4
- NET "Led<5>"  LOC = "AG11"; # Bank = 22, Pin name = IO_L19N_22,     Sch name = LD5
- NET "Led<6>"  LOC = "AF11"; # Bank = 22, Pin name = IO_L16P_22,     Sch name = LD6
- NET "Led<7>"  LOC = "AE11"; # Bank = 22, Pin name = IO_L16N_22,     Sch name = LD7
- NET "BTN<0>"	LOC = "G6";
- NET "BTN<1>"  LOC = "G7";
+ #NET "Led<0>"  LOC = "AG8";  # Bank = 22, Pin name = IO_L18P_22,     Sch name = LD0
+ #NET "Led<1>"  LOC = "AH8";  # Bank = 22, Pin name = IO_L18N_22,     Sch name = LD1
+ #NET "Led<2>"  LOC = "AH9";  # Bank = 22, Pin name = IO_L17P_22,     Sch name = LD2
+ #NET "Led<3>"  LOC = "AG10"; # Bank = 22, Pin name = IO_L19P_22,     Sch name = LD3
+ #NET "Led<4>"  LOC = "AH10"; # Bank = 22, Pin name = IO_L17N_22,     Sch name = LD4
+ #NET "Led<5>"  LOC = "AG11"; # Bank = 22, Pin name = IO_L19N_22,     Sch name = LD5
+ #NET "Led<6>"  LOC = "AF11"; # Bank = 22, Pin name = IO_L16P_22,     Sch name = LD6
+ #NET "Led<7>"  LOC = "AE11"; # Bank = 22, Pin name = IO_L16N_22,     Sch name = LD7
+ #NET "BTN<0>"	LOC = "G6";
+ #NET "BTN<1>"  LOC = "G7";
 #Created by Constraints Editor (xc5vlx50t-ff1136-2) - 2011/10/07
 NET "CLK" TNM_NET = CLK;
 TIMESPEC TS_CLK = PERIOD "CLK" 100 MHz HIGH 50%;

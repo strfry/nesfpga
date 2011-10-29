@@ -29,9 +29,9 @@ entity nes_top is
          HDMID : OUT  std_logic_vector(11 downto 0);
          HDMISCL : INOUT  std_logic;
          HDMISDA : INOUT  std_logic;
-         HDMIRSTN : OUT  std_logic;
-         LED : OUT  std_logic_vector(0 to 7);
-         BTN : IN  std_logic_vector(0 to 1)
+         HDMIRSTN : OUT  std_logic
+    --     LED : OUT  std_logic_vector(0 to 7);
+      --   BTN : IN  std_logic_vector(0 to 1)
 	);
 end nes_top;
 
@@ -69,9 +69,9 @@ architecture arch of nes_top is
     signal HDMI_FB_Color : std_logic_vector(5 downto 0);
     
     --type fb_ram_type is array(0 to 256 * 224) of std_logic_vector(5 downto 0);
-	 type fb_ram_type is array(0 to 256) of std_logic_vector(5 downto 0);
+	 type fb_ram_type is array(0 to 256 * 224) of std_logic_vector(5 downto 0);
     
-    signal fb_ram : fb_ram_type;
+    signal fb_ram : fb_ram_type := (others => "101010");
 
 begin
 	 NES_Clk <= NES_CLK_cnt(1);
@@ -108,6 +108,17 @@ begin
             end if;
         end if;
     end process;
+	 
+	 process (CLK)
+	 begin
+		if rising_edge(CLK) then
+--			if unsigned(HDMI_FB_Address) < 57344 then
+				HDMI_FB_Color <= fb_ram(to_integer(unsigned(HDMI_FB_Address)));
+--			else
+--				HDMI_FB_Color <= (others => '0');
+--			end if;
+		end if;
+	 end process;
     
 
     CPU: NES_2A03
@@ -175,6 +186,26 @@ begin
 			CharacterData => CHR_Data
 	);
 	
+	HDMIOut : HDMIController
+	port map (
+		CLK => CLK,
+		RSTN => rstn,
+		CLK_25 => NES_CLK_cnt(1),
+		
+		HDMIHSync => HDMIHSync,
+		HDMIVSync => HDMIVSync,
+		HDMIDE => HDMIDE,
+		HDMICLKP => HDMICLKP,
+		HDMICLKN => HDMICLKN,
+		HDMID => HDMID,
+		HDMISCL => HDMISCL,
+		HDMISDA => HDMISDA,
+		HDMIRSTN => HDMIRSTN,
+		
+		FB_Address => HDMI_FB_Address,
+		FB_Data => HDMI_FB_Color
+	);
+	 
 	
 	
 end arch;

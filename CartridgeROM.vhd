@@ -26,13 +26,14 @@ entity CartridgeROM is
 end CartridgeROM;
 
 architecture arch of CartridgeROM is
-	--constant prg_size : integer := 32768;
-	--constant chr_size : integer := 8192;
+	constant prg_size : integer := 32768;
+	constant chr_size : integer := 8192;
 	
-	constant prg_size : integer := 1024;
-	constant chr_size : integer := 512;
-   type prg_rom_type is array (0 to prg_size - 1) of bit_vector(7 downto 0);
-   type chr_rom_type is array (0 to chr_size - 1) of bit_vector(7 downto 0);
+--	constant prg_size : integer := 64;
+	--constant chr_size : integer := 32;
+	
+   type prg_rom_type is array (prg_size - 1 downto 0) of bit_vector(7 downto 0);
+   type chr_rom_type is array (chr_size - 1 downto 0) of bit_vector(7 downto 0);
 	 
 	impure function prg_load_file (filename : in string) return prg_rom_type is                                                   
 		FILE rom_file : text is in filename;

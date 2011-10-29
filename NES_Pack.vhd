@@ -91,4 +91,28 @@ package NES_Pack is
 			CharacterData : out std_logic_vector(7 downto 0)
 	);
 	end component;
+	
+	component HDMIController is
+	port (
+		CLK : in std_logic;
+		RSTN : in std_logic;
+		
+		CLK_25 : in std_logic;
+
+		HDMIHSync : OUT  std_logic;
+		HDMIVSync : OUT  std_logic;
+		HDMIDE : OUT  std_logic;
+		HDMICLKP : OUT  std_logic;
+		HDMICLKN : OUT  std_logic;
+		HDMID : OUT  std_logic_vector(11 downto 0);
+		HDMISCL : INOUT  std_logic;
+		HDMISDA : INOUT  std_logic;
+		HDMIRSTN : OUT  std_logic;
+		
+		FB_Address : out std_logic_vector(15 downto 0);
+		FB_Data : in std_logic_vector(5 downto 0)
+	 
+	);
+	end component;
+
 end;
