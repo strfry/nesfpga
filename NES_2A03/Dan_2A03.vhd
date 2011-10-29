@@ -34,7 +34,7 @@ entity NES_2A03 is
 		W_4016_2 	: out std_logic;
 		
 		--Debugging
-		ClockDividerTrigger : out std_logic;
+		ClockDividerTrigger : buffer std_logic;
 		--LCycle : out std_logic_vector(2 downto 0);
 		--MCycle : out std_logic_vector(2 downto 0);
 		--InitialReset : out std_logic;
@@ -91,6 +91,7 @@ architecture Behavioral of NES_2A03 is
 	signal	SRAMWriteSignal	: std_logic;
 	signal	SRAM_Reading		: std_logic;
 	signal	SRAM_Writing		: std_logic;
+	signal	SRAM_CS_N			: std_logic;
 	
 	--Controllers
 	signal	ControllerOnePoll : std_logic := '0';
@@ -103,6 +104,7 @@ begin
 	PHI2	<= PHI2_Internal;
 	
 	SRAMWriteSignal <= not ReadOKSignal when RW_10 = '0' else '1';
+	SRAM_CS_N <= (not PHI2_Internal) or (Address(15) or Address(14) or Address(13));
 	
 --to be implemented later
 	A_Rectangle <= '0';
@@ -143,18 +145,18 @@ end process;
 --Bus Control
 with BusControl select RW_10Signal <=
 	T65RW_10 when '0',
-	DMARW_10	when '1';
+	DMARW_10	when others;
 			
 with BusControl select AddressSignal <=
 	T65Address when '0',
-	DMAAddress when '1';
+	DMAAddress when others;
 	
 T65DataIn	<= DataInSignal when BusControl = '0' else "01010101"; --????
 DMADataIn	<= DataInSignal when BusControl = '1' else "01010101";
 	
 with BusControl select DataOutSignal <=
 	T65DataOut when '0',
-	DMADataOut when '1';
+	DMADataOut when others;
 
 --Bus stuff
 process (Reset_N, AddOKSignal)
@@ -233,7 +235,7 @@ begin
 							DMARW_10 <= '1';
 							DMAAddress <=  std_logic_vector(TransferAddress);
 							TransferAddress <= TransferAddress + 1;
-						when '1' =>
+						when others =>
 							DMARW_10 <= '0';
 							DMAAddress <=  x"2004";
 							DMADataOut <= DMADataIn;
@@ -285,7 +287,7 @@ end process DMATransfer;
 	CPU_RAM : SRAM
 		port map (
 			--Clock				=> PHI2_Internal,
-			ChipSelect_N	=> (not PHI2_Internal) or (Address(15) or Address(14) or Address(13)),
+			ChipSelect_N	=> SRAM_CS_N,
 			ReadEnable_N	=> not RW_10,
 			WriteEnable_N	=> SRAMWriteSignal,
 			OutputEnable_N	=> '0',--not WriteOKSignal,--< this is a problem :-(

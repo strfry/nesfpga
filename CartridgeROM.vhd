@@ -7,7 +7,7 @@
 --------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.std_logic_arith.all;
+use ieee.numeric_std.all;
 
 entity CartridgeROM is
 	port  (
@@ -25,7 +25,7 @@ end CartridgeROM;
 architecture arch of CartridgeROM is
 
     type prg_rom_type is array (0 to 32767) of std_logic_vector(7 downto 0);
-    type chr_rom_type is array (0 to 32767) of std_logic_vector(7 downto 0);
+    type chr_rom_type is array (0 to 8191) of std_logic_vector(7 downto 0);
     
     signal prg_rom : prg_rom_type;
     signal chr_rom : chr_rom_type;
@@ -33,7 +33,7 @@ begin
 
     process (clk) begin
         if rising_edge(clk) then
-            if rstn = '1' then
+            if rstn = '0' then
                 prg_rom <= (
                      0 => "01111000",
                      1 => "11011000",
@@ -41000,9 +41000,13 @@ begin
                      8191 => "11111111"
                     );
             else
-                ProgramData <= prg_rom(conv_integer(ProgramAddress));
-                CharacterData <= chr_rom(conv_integer(CharacterAddress));
+                --ProgramData <= prg_rom(conv_integer(to_unsigned(ProgramAddress, ProgramAddress'length)));
+                --CharacterData <= chr_rom(conv_integer(to_unsigned(CharacterAddress, CharacterAddress'length)));
             end if;
+				
+				
+				ProgramData <= prg_rom(to_integer(unsigned(ProgramAddress)));
+				CharacterData <= chr_rom(to_integer(unsigned(CharacterAddress)));
         end if;
     end process;
 

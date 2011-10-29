@@ -9,7 +9,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 
-package NESPack is
+package NES_Pack is
     
     component NES_2A03 is
         port (
@@ -38,7 +38,7 @@ package NESPack is
             W_4016_2    : out std_logic;
             
             --Debugging
-            ClockDividerTrigger : out std_logic;
+            ClockDividerTrigger : buffer std_logic;
             --LCycle : out std_logic_vector(2 downto 0);
             --MCycle : out std_logic_vector(2 downto 0);
             --InitialReset : out std_logic;
@@ -78,4 +78,17 @@ package NESPack is
         FB_DE : out std_logic    -- True when PPU is writing to the framebuffer
     );
     end component;
+	 
+	 component CartridgeROM is
+	 port  (
+			clk : in std_logic;        -- input clock, xx MHz.
+			rstn : in std_logic;
+			 
+			ProgramAddress : in std_logic_vector(14 downto 0);
+			ProgramData : out std_logic_vector(7 downto 0);
+			  
+			CharacterAddress : in std_logic_vector(14 downto 0);
+			CharacterData : out std_logic_vector(7 downto 0)
+	);
+	end component;
 end;

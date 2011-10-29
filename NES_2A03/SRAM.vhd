@@ -25,7 +25,7 @@ end SRAM;
 architecture Behavioral of SRAM is
 	-- Declare Memory type
 	type Memory is array(0 to 2047) of std_logic_vector (7 downto 0);
-	signal CPUMemory : Memory;
+	signal CPUMemory : Memory := (others => (others => 'X'));
 	
 begin
    process (ChipSelect_N, ReadEnable_N, OutputEnable_N)

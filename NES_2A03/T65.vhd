@@ -78,7 +78,7 @@ entity T65 is
 		Clk_AddOK : in std_logic;
 		Clk_ReadOK : in std_logic;
 		Rdy     : in  std_logic;
-		Abort_n : in  std_logic;
+		--Abort_n : in  std_logic;
 		IRQ_n   : in  std_logic;
 		NMI_n   : in  std_logic;
 		SO_n    : in  std_logic;
