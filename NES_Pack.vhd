@@ -7,7 +7,7 @@
 --------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.std_logic_arith.all;
+use ieee.numeric_std.all;
 
 package NES_Pack is
     
@@ -56,8 +56,7 @@ package NES_Pack is
     component NES_2C02 is
     port  (
         clk : in std_logic;        -- input clock, 5,37 MHz.
-        -- rst : in std_logic;    -- the 2C02 does not have a reset pin, and the sync_n pin
-                               -- seems to be unnecessary, as it is either hardwired to 1 or reset
+        rstn : in std_logic;
         
         -- CPU Bus
         ChipSelect_n : in std_logic;
@@ -67,8 +66,8 @@ package NES_Pack is
         Data_out : out std_logic_vector(7 downto 0);
         
         -- VRAM/VROM bus
-        PPU_Address : out std_logic_vector(14 downto 0);
-        PPU_Data : in std_logic_vector(7 downto 0);
+        CHR_Address : buffer unsigned(13 downto 0);
+        CHR_Data : in std_logic_vector(7 downto 0);
         
         VBlank_n : out std_logic; -- Tied to the CPU's Non-Maskable Interrupt (NMI)     
         
@@ -84,11 +83,11 @@ package NES_Pack is
 			clk : in std_logic;        -- input clock, xx MHz.
 			rstn : in std_logic;
 			 
-			ProgramAddress : in std_logic_vector(14 downto 0);
-			ProgramData : out std_logic_vector(7 downto 0);
+			PRG_Address : in std_logic_vector(14 downto 0);
+			PRG_Data : out std_logic_vector(7 downto 0);
 			  
-			CharacterAddress : in std_logic_vector(14 downto 0);
-			CharacterData : out std_logic_vector(7 downto 0)
+			CHR_Address : in unsigned(13 downto 0);
+			CHR_Data : out std_logic_vector(7 downto 0)
 	);
 	end component;
 	

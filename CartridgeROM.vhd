@@ -17,11 +17,11 @@ entity CartridgeROM is
 		clk : in std_logic;        -- input clock, xx MHz.
 		rstn : in std_logic;
 		 
-        ProgramAddress : in std_logic_vector(14 downto 0);
-        ProgramData : out std_logic_vector(7 downto 0);
+        PRG_Address : in std_logic_vector(14 downto 0);
+        PRG_Data : out std_logic_vector(7 downto 0);
         
-        CharacterAddress : in std_logic_vector(14 downto 0);
-        CharacterData : out std_logic_vector(7 downto 0)
+        CHR_Address : in unsigned(13 downto 0);
+        CHR_Data : out std_logic_vector(7 downto 0)
 	);
 end CartridgeROM;
 
@@ -30,10 +30,13 @@ architecture arch of CartridgeROM is
 	constant chr_size : integer := 8192;
 	
 --	constant prg_size : integer := 64;
-	--constant chr_size : integer := 32;
+--	constant chr_size : integer := 32;
 	
-   type prg_rom_type is array (prg_size - 1 downto 0) of bit_vector(7 downto 0);
-   type chr_rom_type is array (chr_size - 1 downto 0) of bit_vector(7 downto 0);
+--   type prg_rom_type is array (prg_size - 1 downto 0) of bit_vector(7 downto 0);
+--   type chr_rom_type is array (chr_size - 1 downto 0) of bit_vector(7 downto 0);
+	
+   type prg_rom_type is array (0 to prg_size - 1) of bit_vector(7 downto 0);
+   type chr_rom_type is array (0 to chr_size - 1) of bit_vector(7 downto 0);
 	 
 	impure function prg_load_file (filename : in string) return prg_rom_type is                                                   
 		FILE rom_file : text is in filename;
@@ -69,8 +72,8 @@ begin
 				
     process (clk) begin
         if rising_edge(clk) then
-				ProgramData <= to_stdlogicvector(prg_rom(to_integer(unsigned(ProgramAddress))));
-				CharacterData <= to_stdlogicvector(chr_rom(to_integer(unsigned(CharacterAddress))));
+				PRG_Data <= to_stdlogicvector(prg_rom(to_integer(unsigned(PRG_Address))));
+				CHR_Data <= to_stdlogicvector(chr_rom(to_integer(CHR_Address(10 downto 0))));
         end if;
     end process;
 

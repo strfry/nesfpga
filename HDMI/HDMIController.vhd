@@ -71,6 +71,15 @@ architecture Behavioral of HDMIController is
 	);
 	end component;
 	
+	component ColorPalette is
+	port (
+		ColorIndex : in  unsigned (5 downto 0);
+      Red : out  STD_LOGIC_VECTOR (5 downto 0);
+      Green : out  STD_LOGIC_VECTOR (5 downto 0);
+      Blue : out  STD_LOGIC_VECTOR (5 downto 0)
+	);
+	end component;
+	
 	signal HSYNC : std_logic;
 	signal VSYNC : std_logic;
 	signal DE : std_logic;
@@ -91,10 +100,12 @@ architecture Behavioral of HDMIController is
 	signal FB_Address_int : integer;
 	
 	signal VSYNC_delay : std_logic_vector(0 to 3);
+	signal RST : std_logic;
 
 begin
 	
 	HDMIRSTN <= RSTN;
+	RST <= not RSTN;
 
 
 
@@ -104,10 +115,6 @@ begin
 	HSYNC <= '0' when HSYNC_cnt < 96 else '1';
 	
 	DE <= '1' when HSYNC_cnt >= 144 and HSYNC_cnt < 784 and VSYNC_cnt >= 33 and VSYNC_cnt < 513 else '0';
-	
-	RED <= FB_Data;
-	GREEN <= FB_Data;
-	BLUE <= FB_Data;
 	
 	process (VSYNC_cnt, HSYNC_cnt)
 	variable addr_int : integer;
@@ -168,9 +175,9 @@ begin
 	interface : tft_interface
 	port map (
 		TFT_Clk => CLK_25,
-		TFT_Rst => not RSTN,          
+		TFT_Rst => RST, 
 		Bus2IP_Clk => CLK,        
-		Bus2IP_Rst => not RSTN,       
+		Bus2IP_Rst => RST,       
 		HSYNC => HSYNC,           
 		VSYNC => VSYNC,           
 		DE => DE,                 
@@ -204,6 +211,14 @@ begin
 		TFT_iic_reg_addr => "--------",
 		TFT_iic_reg_data => "--------"
 );
+
+	PALETTE : ColorPalette
+	port map (
+		ColorIndex => unsigned(FB_Data),
+		Red => RED,
+		Green => GREEN,
+		Blue => BLUE
+	);
 
 
 end Behavioral;

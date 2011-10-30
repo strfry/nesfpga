@@ -45,13 +45,12 @@ architecture arch of nes_top is
     signal CPU_Address : std_logic_vector(15 downto 0);
     signal CPU_Data : std_logic_vector(7 downto 0);
    
-    signal CPU_PPU_Data : std_logic_vector(7 downto 0); 
     signal PPU_CPU_Data : std_logic_vector(7 downto 0); 
     signal CPU_RW : std_logic;
 	 signal CPU_PPU_CS_n : std_logic;
     
     
-    signal PPU_Address : std_logic_vector(14 downto 0);
+    signal PPU_Address : unsigned(13 downto 0);
     signal PPU_Data : std_logic_vector(7 downto 0);
     -- signal PPU_RW : std_logic;
     
@@ -85,7 +84,7 @@ begin
 
 	 CPU_PPU_CS_n <= '0' when CPU_Address(15 downto 3) = "0010000000000" else '1';
     
-    process (CPU_RW, PPU_CPU_Data, PRG_Data)
+    process (CPU_RW, PPU_CPU_Data, PRG_Data, CPU_PPU_CS_n, CPU_Address)
     begin
         if CPU_RW = '1' then
 				if CPU_PPU_CS_n = '0' then
@@ -160,14 +159,15 @@ begin
     PPU : NES_2C02
     port map (
         clk => NES_Clk,
+		  rstn => rstn,
         ChipSelect_n => CPU_PPU_CS_n,
         ReadWrite => CPU_RW,
         Address => CPU_Address(2 downto 0),
         Data_in => CPU_Data,
-        Data_out => CPU_PPU_Data,
+        Data_out => PPU_CPU_Data,
         
-        PPU_Address => PPU_Address,
-        PPU_Data => PPU_Data,
+        CHR_Address => PPU_Address,
+        CHR_Data => PPU_Data,
         
         VBlank_n => VBlank_NMI_n,
         FB_Address => PPU_FB_Address,
@@ -179,11 +179,11 @@ begin
 	port map (
 			clk => NES_Clk,
 			rstn => rstn,		 
-			ProgramAddress => CPU_Address(14 downto 0),
-			ProgramData => PRG_Data,
+			PRG_Address => CPU_Address(14 downto 0),
+			PRG_Data => PRG_Data,
         
-			CharacterAddress => PPU_Address(14 downto 0),
-			CharacterData => CHR_Data
+			CHR_Address => PPU_Address,
+			CHR_Data => CHR_Data
 	);
 	
 	HDMIOut : HDMIController
