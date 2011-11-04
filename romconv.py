@@ -15,4 +15,4 @@ def write_coe(name, bytes):
 
 
 write_coe(basename + "_prg.coe", 32768)
-write_coe(basename + "_chr.coe", 8192)
+#write_coe(basename + "_chr.coe", 8192)
