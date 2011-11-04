@@ -23,7 +23,7 @@ begin
 
 	with to_integer(ColorIndex) select
 		Entry <=
-			X"525252" when 0,
+			X"727272" when 0,
 			X"000080" when 1,
 			X"08008A" when 2,
 			X"2C007E" when 3,

@@ -47,20 +47,18 @@ architecture arch of nes_top is
    
     signal PPU_CPU_Data : std_logic_vector(7 downto 0); 
     signal CPU_RW : std_logic;
+    signal CPU_PHI2 : std_logic; -- High when CPU_Data is valid
 	 signal CPU_PPU_CS_n : std_logic;
     
-    
-    signal PPU_Address : unsigned(13 downto 0);
-    signal PPU_Data : std_logic_vector(7 downto 0);
-    -- signal PPU_RW : std_logic;
-    
-
+	 
     signal PPU_FB_Address : std_logic_vector(15 downto 0);
     signal PPU_FB_Color : std_logic_vector(5 downto 0);
     signal PPU_FB_DE : std_logic;
 	 
 	 
     signal PRG_Data : std_logic_vector(7 downto 0);
+	 
+    signal CHR_Address : unsigned(13 downto 0);
     signal CHR_Data : std_logic_vector(7 downto 0);
    
     
@@ -68,7 +66,7 @@ architecture arch of nes_top is
     signal HDMI_FB_Color : std_logic_vector(5 downto 0);
     
     --type fb_ram_type is array(0 to 256 * 224) of std_logic_vector(5 downto 0);
-	 type fb_ram_type is array(0 to 256 * 224) of std_logic_vector(5 downto 0);
+	 type fb_ram_type is array(65535 downto 0) of std_logic_vector(5 downto 0);
     
     signal fb_ram : fb_ram_type := (others => "101010");
 
@@ -82,7 +80,7 @@ begin
 		  end if;
 	 end process;
 
-	 CPU_PPU_CS_n <= '0' when CPU_Address(15 downto 3) = "0010000000000" else '1';
+	 CPU_PPU_CS_n <= '0' when CPU_Address(15 downto 3) = "0010000000000" and CPU_PHI2 = '1' else '1';
     
     process (CPU_RW, PPU_CPU_Data, PRG_Data, CPU_PPU_CS_n, CPU_Address)
     begin
@@ -132,7 +130,7 @@ begin
         RW_10 => CPU_RW,
         
         PHI1 => open,
-        PHI2 => open,
+        PHI2 => CPU_PHI2,
         
         CStrobe => open,
         C1R_N => open,
@@ -166,8 +164,8 @@ begin
         Data_in => CPU_Data,
         Data_out => PPU_CPU_Data,
         
-        CHR_Address => PPU_Address,
-        CHR_Data => PPU_Data,
+        CHR_Address => CHR_Address,
+        CHR_Data => CHR_Data,
         
         VBlank_n => VBlank_NMI_n,
         FB_Address => PPU_FB_Address,
@@ -182,7 +180,7 @@ begin
 			PRG_Address => CPU_Address(14 downto 0),
 			PRG_Data => PRG_Data,
         
-			CHR_Address => PPU_Address,
+			CHR_Address => CHR_Address,
 			CHR_Data => CHR_Data
 	);
 	

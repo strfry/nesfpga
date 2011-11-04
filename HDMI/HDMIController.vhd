@@ -118,12 +118,17 @@ begin
 	
 	process (VSYNC_cnt, HSYNC_cnt)
 	variable addr_int : integer;
+	variable HPOS, VPOS : integer;
 	begin
-		addr_int := (VSYNC_cnt - 33) / 2 * 256 + (HSYNC_cnt - 144) / 2;
-		if addr_int >= 57344 then
-			addr_int := 0;
+		HPOS := (HSYNC_cnt - 144) / 2 - 32;
+		VPOS := (VSYNC_cnt - 33) / 2;
+		addr_int := VPOS * 256 + HPOS;
+		
+		if HPOS >= 0 and HPOS < 256 and VPOS >= 0 and VPOS < 240 then
+			FB_Address <= std_logic_vector(to_unsigned(addr_int, FB_Address'length));
+		else
+			FB_Address <= (others => '0');
 		end if;
-		FB_Address <= std_logic_vector(to_unsigned(addr_int, FB_Address'length));
 	end process;
 	
 	process (CLK_25)
@@ -171,7 +176,7 @@ begin
 		IO => HDMISDA
 	);
 
-
+     
 	interface : tft_interface
 	port map (
 		TFT_Clk => CLK_25,

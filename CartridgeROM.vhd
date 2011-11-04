@@ -12,6 +12,9 @@ use ieee.numeric_std.all;
 library std;
 use std.textio.all;
 
+Library UNISIM;
+use UNISIM.vcomponents.all;
+
 entity CartridgeROM is
 	port  (
 		clk : in std_logic;        -- input clock, xx MHz.
@@ -25,57 +28,40 @@ entity CartridgeROM is
 	);
 end CartridgeROM;
 
+
 architecture arch of CartridgeROM is
-	constant prg_size : integer := 32768;
-	constant chr_size : integer := 8192;
-	
---	constant prg_size : integer := 64;
---	constant chr_size : integer := 32;
-	
---   type prg_rom_type is array (prg_size - 1 downto 0) of bit_vector(7 downto 0);
---   type chr_rom_type is array (chr_size - 1 downto 0) of bit_vector(7 downto 0);
-	
-   type prg_rom_type is array (0 to prg_size - 1) of bit_vector(7 downto 0);
-   type chr_rom_type is array (0 to chr_size - 1) of bit_vector(7 downto 0);
-	 
-	impure function prg_load_file (filename : in string) return prg_rom_type is                                                   
-		FILE rom_file : text is in filename;
-		variable current_line : line;
-		variable ret : prg_rom_type;
-    begin                                                        
-       for I in prg_rom_type'range loop                                  
-           readline (rom_file, current_line);
-           read (current_line, ret(I));                                  
-       end loop;                                                    
-       return ret;
-    end function;  
+	COMPONENT bram_smb_prg
+	PORT (
+		clka : IN STD_LOGIC;
+		addra : IN STD_LOGIC_VECTOR(14 DOWNTO 0);
+		douta : OUT STD_LOGIC_VECTOR(7 DOWNTO 0)
+	);
+	END COMPONENT;
 
-	impure function chr_load_file (filename : in string) return chr_rom_type is                                                   
-		FILE rom_file : text is in filename;
-		variable current_line : line;
-		variable ret : chr_rom_type;
-    begin                                                        
-       for I in chr_rom_type'range loop                                  
-           readline (rom_file, current_line);
-           read (current_line, ret(I));                                  
-       end loop;                                                    
-       return ret;
-    end function;  	 
+	COMPONENT bram_smb_chr
+	PORT (
+		clka : IN STD_LOGIC;
+		addra : IN STD_LOGIC_VECTOR(12 DOWNTO 0);
+		douta : OUT STD_LOGIC_VECTOR(7 DOWNTO 0)
+	);
+	END COMPONENT;
 
-
-    
-    signal prg_rom : prg_rom_type := prg_load_file("smb.prg");
-    signal chr_rom : chr_rom_type := chr_load_file("smb.chr");
 begin
 
+prg : bram_smb_prg
+  PORT MAP (
+    clka => clk,
+    addra => PRG_Address,
+    douta => PRG_Data
+  );
 
-				
-    process (clk) begin
-        if rising_edge(clk) then
-				PRG_Data <= to_stdlogicvector(prg_rom(to_integer(unsigned(PRG_Address))));
-				CHR_Data <= to_stdlogicvector(chr_rom(to_integer(CHR_Address(10 downto 0))));
-        end if;
-    end process;
+chr : bram_smb_chr
+  PORT MAP (
+    clka => clk,
+    addra => std_logic_vector(CHR_Address(12 downto 0)),
+    douta => CHR_Data
+  );
 
 end arch;
+
 

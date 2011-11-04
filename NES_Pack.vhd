@@ -66,7 +66,7 @@ package NES_Pack is
         Data_out : out std_logic_vector(7 downto 0);
         
         -- VRAM/VROM bus
-        CHR_Address : buffer unsigned(13 downto 0);
+        CHR_Address : out unsigned(13 downto 0);
         CHR_Data : in std_logic_vector(7 downto 0);
         
         VBlank_n : out std_logic; -- Tied to the CPU's Non-Maskable Interrupt (NMI)     

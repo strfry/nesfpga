@@ -288,7 +288,7 @@ end process DMATransfer;
 		port map (
 			--Clock				=> PHI2_Internal,
 			ChipSelect_N	=> SRAM_CS_N,
-			ReadEnable_N	=> not RW_10,
+			ReadEnable_N	=> "not"(RW_10),
 			WriteEnable_N	=> SRAMWriteSignal,
 			OutputEnable_N	=> '0',--not WriteOKSignal,--< this is a problem :-(
 			Address			=> Address (10 downto 0),
