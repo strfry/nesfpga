@@ -48,15 +48,11 @@ package Pack_2A03 is
 	
 	component SRAM
 	port(
-		--Clock				: in std_logic;
 		ChipSelect_N	: in std_logic;
-		ReadEnable_N	: in std_logic;
 		WriteEnable_N	: in std_logic;
 		OutputEnable_N : in std_logic;
 		Address			: in std_logic_vector (10 downto 0);
-		Data				: inout std_logic_vector (7 downto 0);
-		Reading			: out std_logic;
-		Writing			: out std_logic
+		Data				: inout std_logic_vector (7 downto 0)
 		);
 	end component;
 end Pack_2A03;

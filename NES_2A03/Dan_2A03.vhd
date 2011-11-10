@@ -142,14 +142,9 @@ begin
 	end if;
 end process;
 
---Bus Control
-with BusControl select RW_10Signal <=
-	T65RW_10 when '0',
-	DMARW_10	when others;
+RW_10Signal <= T65RW_10 when BusControl = '0' else DMARW_10;
+AddressSignal <= T65Address when BusControl = '0' else DMAAddress;
 			
-with BusControl select AddressSignal <=
-	T65Address when '0',
-	DMAAddress when others;
 	
 T65DataIn	<= DataInSignal when BusControl = '0' else "01010101"; --????
 DMADataIn	<= DataInSignal when BusControl = '1' else "01010101";
@@ -286,14 +281,10 @@ end process DMATransfer;
 		
 	CPU_RAM : SRAM
 		port map (
-			--Clock				=> PHI2_Internal,
 			ChipSelect_N	=> SRAM_CS_N,
-			ReadEnable_N	=> "not"(RW_10),
 			WriteEnable_N	=> SRAMWriteSignal,
-			OutputEnable_N	=> '0',--not WriteOKSignal,--< this is a problem :-(
+			OutputEnable_N	=> '0',
 			Address			=> Address (10 downto 0),
-			Data				=> Data,
-			Reading			=> SRAM_Reading,
-			Writing			=> SRAM_Writing
+			Data				=> Data
 		);
 end;
