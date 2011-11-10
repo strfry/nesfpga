@@ -16,8 +16,8 @@ use work.NES_Pack.all;
 
 entity nes_top is
 	port  (
-		clk : in std_logic;        -- input clock, xx MHz.
-		rstn : in std_logic;
+		CLK : in std_logic;        -- input clock, 100 MHz.
+		RSTN : in std_logic;
 		
 		--HDMICLK
 		
@@ -37,57 +37,53 @@ end nes_top;
 
 architecture arch of nes_top is
 
-    signal NES_CLK_cnt : unsigned(1 downto 0) := "00";
+	signal DCM_CLK0 : std_logic;
+	signal DCM_Locked : std_logic;
+	signal NES_Clock : std_logic;
+	signal TFT_Clock : std_logic;
+	signal VBlank_NMI_n : std_logic;
 
-    signal NES_Clk : std_logic;
-    signal VBlank_NMI_n : std_logic;
-    
-    signal CPU_Address : std_logic_vector(15 downto 0);
-    signal CPU_Data : std_logic_vector(7 downto 0);
-   
-    signal PPU_CPU_Data : std_logic_vector(7 downto 0); 
-    signal CPU_RW : std_logic;
-    signal CPU_PHI2 : std_logic; -- High when CPU_Data is valid
-	 signal CPU_PPU_CS_n : std_logic;
-    
-	 
-    signal PPU_FB_Address : std_logic_vector(15 downto 0);
-    signal PPU_FB_Color : std_logic_vector(5 downto 0);
-    signal PPU_FB_DE : std_logic;
-	 
-	 
-    signal PRG_Data : std_logic_vector(7 downto 0);
-	 
-    signal CHR_Address : unsigned(13 downto 0);
-    signal CHR_Data : std_logic_vector(7 downto 0);
-   
-    
-    signal HDMI_FB_Address : std_logic_vector(15 downto 0);
-    signal HDMI_FB_Color : std_logic_vector(5 downto 0);
-    
-    --type fb_ram_type is array(0 to 256 * 224) of std_logic_vector(5 downto 0);
-	 type fb_ram_type is array(65535 downto 0) of std_logic_vector(5 downto 0);
-    
-    signal fb_ram : fb_ram_type := (others => "101010");
+	signal CPU_Address : std_logic_vector(15 downto 0);
+	signal CPU_Data : std_logic_vector(7 downto 0);
+
+	signal PPU_CPU_Data : std_logic_vector(7 downto 0); 
+	signal CPU_RW : std_logic;
+	signal CPU_PHI2 : std_logic; -- High when CPU_Data is valid
+	signal CPU_PPU_CS_n : std_logic;
+
+
+	signal PPU_FB_Address : std_logic_vector(15 downto 0);
+	signal PPU_FB_Color : std_logic_vector(5 downto 0);
+	signal PPU_FB_DE : std_logic;
+
+
+	signal PRG_Data : std_logic_vector(7 downto 0);
+	signal CPU_PRG_CS_n : std_logic;
+
+
+	signal CHR_Address : unsigned(13 downto 0);
+	signal CHR_Data : std_logic_vector(7 downto 0);
+
+
+	signal HDMI_FB_Address : std_logic_vector(15 downto 0);
+	signal HDMI_FB_Color : std_logic_vector(5 downto 0);
+
+	--type fb_ram_type is array(0 to 256 * 224) of std_logic_vector(5 downto 0);
+	type fb_ram_type is array(65535 downto 0) of std_logic_vector(5 downto 0);
+
+	signal fb_ram : fb_ram_type := (others => "101010");
 
 begin
-	 NES_Clk <= NES_CLK_cnt(1);
 	 
-	 process (CLK)
-	 begin
-		  if rising_edge(CLK) then
-			   NES_CLK_cnt <= NES_CLK_cnt + 1;
-		  end if;
-	 end process;
-
 	 CPU_PPU_CS_n <= '0' when CPU_Address(15 downto 3) = "0010000000000" and CPU_PHI2 = '1' else '1';
+	 CPU_PRG_CS_n <= '0' when CPU_Address(15) = '1' and CPU_PHI2 = '1' else '1';
     
-    process (CPU_RW, PPU_CPU_Data, PRG_Data, CPU_PPU_CS_n, CPU_Address)
+    process (CPU_RW, PPU_CPU_Data, PRG_Data, CPU_PPU_CS_n, CPU_PRG_CS_n, CPU_Address)
     begin
         if CPU_RW = '1' then
 				if CPU_PPU_CS_n = '0' then
 					CPU_Data <= PPU_CPU_Data;
-				elsif	CPU_Address(15) = '1'  then
+				elsif	CPU_PRG_CS_n = '0' then
 					CPU_Data <= PRG_Data;
 				else
 					CPU_Data <= (others => 'Z');
@@ -97,9 +93,9 @@ begin
         end if;
     end process; 
     
-    process (Nes_Clk) 
+    process (Nes_Clock) 
     begin
-        if rising_edge(Nes_Clk) then
+        if rising_edge(Nes_Clock) then
             if PPU_FB_DE = '1' then
                 fb_ram(to_integer(unsigned(PPU_FB_Address))) <= PPU_FB_Color;
             end if;
@@ -120,7 +116,7 @@ begin
 
     CPU: NES_2A03
     port map (
-        Global_Clk => NES_Clk,
+        Global_Clk => NES_Clock,
         Reset_N => rstn,
         NMI_N => VBlank_NMI_n,
         IRQ_N => '1',
@@ -156,7 +152,7 @@ begin
     
     PPU : NES_2C02
     port map (
-        clk => NES_Clk,
+        clk => NES_Clock,
 		  rstn => rstn,
         ChipSelect_n => CPU_PPU_CS_n,
         ReadWrite => CPU_RW,
@@ -175,7 +171,7 @@ begin
 	 
 	Cartridge : CartridgeROM
 	port map (
-			clk => NES_Clk,
+			clk => CPU_PHI2,
 			rstn => rstn,		 
 			PRG_Address => CPU_Address(14 downto 0),
 			PRG_Data => PRG_Data,
@@ -187,8 +183,8 @@ begin
 	HDMIOut : HDMIController
 	port map (
 		CLK => CLK,
-		RSTN => rstn,
-		CLK_25 => NES_CLK_cnt(1),
+		RSTN => RSTN,
+		CLK_25 => TFT_Clock,
 		
 		HDMIHSync => HDMIHSync,
 		HDMIVSync => HDMIVSync,
@@ -204,6 +200,41 @@ begin
 		FB_Data => HDMI_FB_Color
 	);
 	 
+	DCM_BASE_inst : DCM_BASE
+	generic map (
+		CLKDV_DIVIDE => 4.0, -- Divide by: 1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,6.5
+									--   7.0,7.5,8.0,9.0,10.0,11.0,12.0,13.0,14.0,15.0 or 16.0
+		CLKFX_DIVIDE => 9,   -- Can be any integer from 1 to 32
+		CLKFX_MULTIPLY => 2, -- Can be any integer from 2 to 32
+		CLKIN_DIVIDE_BY_2 => FALSE, -- TRUE/FALSE to enable CLKIN divide by two feature
+		CLKIN_PERIOD => 10.0, -- Specify period of input clock in ns from 1.25 to 1000.00
+		CLKOUT_PHASE_SHIFT => "NONE", -- Specify phase shift mode of NONE or FIXED
+		CLK_FEEDBACK => "1X",         -- Specify clock feedback of NONE or 1X
+		DCM_PERFORMANCE_MODE => "MAX_SPEED",   -- Can be MAX_SPEED or MAX_RANGE
+		DESKEW_ADJUST => "SYSTEM_SYNCHRONOUS", -- SOURCE_SYNCHRONOUS, SYSTEM_SYNCHRONOUS or
+															--   an integer from 0 to 15
+		DFS_FREQUENCY_MODE => "LOW",   -- LOW or HIGH frequency mode for frequency synthesis
+		DLL_FREQUENCY_MODE => "LOW",   -- LOW, HIGH, or HIGH_SER frequency mode for DLL
+		DUTY_CYCLE_CORRECTION => TRUE, -- Duty cycle correction, TRUE or FALSE
+		FACTORY_JF => X"F0F0",          -- FACTORY JF Values Suggested to be set to X"F0F0" 
+		PHASE_SHIFT => 0, -- Amount of fixed phase shift from -255 to 1023
+		STARTUP_WAIT => FALSE) -- Delay configuration DONE until DCM LOCK, TRUE/FALSE
+	port map (
+		CLK0 => DCM_CLK0,     -- 0 degree DCM CLK ouptput
+		CLK180 => open,	    -- 180 degree DCM CLK output
+		CLK270 => open,       -- 270 degree DCM CLK output
+		CLK2X => open,        -- 2X DCM CLK output
+		CLK2X180 => open,     -- 2X, 180 degree DCM CLK out
+		CLK90 => open,        -- 90 degree DCM CLK output
+		CLKDV => TFT_Clock,        -- Divided DCM CLK out (CLKDV_DIVIDE)
+		CLKFX => NES_Clock,   -- DCM CLK synthesis out (M/D)
+		CLKFX180 => open,     -- 180 degree CLK synthesis out
+		LOCKED => DCM_Locked, -- DCM LOCK status output
+		CLKFB => DCM_CLK0,        -- DCM clock feedback
+		CLKIN => CLK,         -- Clock input (from IBUFG, BUFG or DCM)
+		RST => "not"(RSTN)    -- DCM asynchronous reset input
+	);
+
 	
 	
 end arch;

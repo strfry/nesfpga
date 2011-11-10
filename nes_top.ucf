@@ -2,7 +2,6 @@
 # To use it in a project:
 # - remove or comment the lines corresponding to unused pins
 # - rename the used signals according to the project
-
 # clock pin for Genesys rev C board
 #TIMESPEC TS_clk = PERIOD clk 100000 kHz;
  NET "clk"   LOC = "AG18"; # Bank = 4, Pin name = IO_L6P_GC_4, Type = GCLK, Sch name = GCLK0
@@ -41,5 +40,8 @@
  #NET "BTN<0>"	LOC = "G6";
  #NET "BTN<1>"  LOC = "G7";
 #Created by Constraints Editor (xc5vlx50t-ff1136-2) - 2011/10/07
-NET "CLK" TNM_NET = CLK;
-TIMESPEC TS_CLK = PERIOD "CLK" 100 MHz HIGH 50%;
+#Created by Constraints Editor (xc5vlx50t-ff1136-2) - 2011/11/08
+NET "clk" TNM_NET = clk;
+TIMESPEC TS_clk = PERIOD "clk" 10 ns HIGH 50%;
+NET "NES_CLK_cnt_11" TNM_NET = NES_CLK_cnt_11;
+TIMESPEC TS_NES_CLK_cnt_11 = PERIOD "NES_CLK_cnt_11" TS_clk / 4 HIGH 50%;

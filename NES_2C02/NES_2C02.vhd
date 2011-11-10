@@ -74,6 +74,46 @@ architecture arch of NES_2C02 is
 	type PaletteRAMType is array(31 downto 0) of std_logic_vector(5 downto 0);
 	
 	signal VRAMData : VRAMType := (
+		0 => X"00",
+		1 => X"01",
+		2 => X"02",
+		3 => X"03",
+		4 => X"04",
+		5 => X"05",
+		6 => X"06",
+		7 => X"07",
+		8 => X"08",
+		9 => X"09",
+		20 => X"11",
+		21 => X"12",
+		22 => X"13",
+		23 => X"04",
+		24 => X"05",
+		25 => X"06",
+		26 => X"07",
+		27 => X"08",
+		29 => X"09",
+		30 => X"0a",
+		50 => X"0b",
+		51 => X"0c",
+		52 => X"0d",
+		53 => X"0e",
+		54 => X"0f",
+		55 => X"13",
+		56 => X"12",
+		57 => X"11",
+		58 => X"1d",
+		59 => X"1c",
+		100 => X"1b",
+		101 => X"20",
+		102 => X"40",
+		103 => X"50",
+		104 => X"60",
+		105 => X"60",
+		106 => X"60",
+		107 => X"70",
+		108 => X"80",
+		109 => X"a0",
 		others => "00000000"
 	);
 	
@@ -198,7 +238,7 @@ begin
 					if SpriteCache(0).x - HPOS < 8 then FB_Color <= "101111"; end if;
 				end if;
 				
-				if HPOS < 8 or HPOS > 248 or VPOS < 8 or VPOS > 232 then
+				if HPOS < 0 or HPOS >= 256 or VPOS < 0 or VPOS >= 240 then
 					FB_Color <= "101111";
 				end if;
 				
@@ -223,8 +263,8 @@ begin
 			
 			ChipSelect_delay <= ChipSelect_n;
 				
+			-- workaround for seemingly asynchronous ChipSelect
 			if ChipSelect_n = '0' and ChipSelect_delay = '1' then
-					
 				if ReadWrite = '0' then
 					if Address = "000" then
 						Status_2000 <= Data_in;
@@ -312,6 +352,7 @@ begin
 					when 1 =>
 					when 2 =>
 						BGTileName <= unsigned(PPU_Data_r);
+						--BGTileName <= X"24";
 						--BGTileName <= to_unsigned(8192 + HPOS / 8 + VPOS / 8 * 32, 8);
 						address :=  9152 + HPOS / 32 + VPOS / 32 * 32;
 						PPU_Address <= to_unsigned(address, PPU_Address'length);
@@ -327,9 +368,9 @@ begin
 					when 5 =>
 					when 6 =>
 						TilePipeline(2).pattern0 <= PPU_Data_r;
-						if Status_2000(4) = '1' then
+--						if Status_2000(4) = '1' then
 							address := 4096;
-						end if;
+--						end if;
 						
 						address := address + to_integer(BGTileName * 16 + (VPOS mod 8) * 2 + 1);
 						PPU_Address <=  to_unsigned(address, PPU_Address'length);
@@ -407,10 +448,10 @@ begin
 				SpritesFound <= 0;
 			elsif SpriteCounter < 64 and HPOS >= 0 and HPOS < 256 and VPOS >= 0 and VPOS < 240 then
 				if HPOS mod 2 = 0 then
-					currentSprite.y <= unsigned(SpriteMemData(SpriteCounter * 4));
-					currentSprite.x <= unsigned(SpriteMemData(SpriteCounter * 4 + 1));
-					currentSprite.pattern <= unsigned(SpriteMemData(SpriteCounter * 4 + 2));
-					currentSprite.attr <= unsigned(SpriteMemData(SpriteCounter * 4 + 3));
+					currentSprite.y := unsigned(SpriteMemData(SpriteCounter * 4));
+					currentSprite.x := unsigned(SpriteMemData(SpriteCounter * 4 + 1));
+					currentSprite.pattern := unsigned(SpriteMemData(SpriteCounter * 4 + 2));
+					currentSprite.attr := unsigned(SpriteMemData(SpriteCounter * 4 + 3));
 				else
 					if currentSprite.y - VPOS < 8 and currentSprite.y - VPOS > 0 and SpritesFound < 8 then
 						SpriteCache(SpriteCounter) <= currentSprite;
