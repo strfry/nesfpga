@@ -10,6 +10,7 @@ use ieee.numeric_std.all;
 
 entity SRAM is
 	port(
+		Clock				: in std_logic;
 		ChipSelect_N	: in std_logic;
 		WriteEnable_N	: in std_logic;
 		OutputEnable_N : in std_logic;
@@ -21,22 +22,24 @@ end SRAM;
 architecture Behavioral of SRAM is
 	-- Declare Memory type
 	type Memory is array(0 to 2047) of std_logic_vector (7 downto 0);
-	signal CPUMemory : Memory := (others => (others => '0'));
+	signal CPUMemory : Memory := (others => (others => 'U'));
 	
 	signal Data_out : std_logic_vector (7 downto 0);
+	signal WriteEnable_d : std_logic;
 	
 begin
 	
-	Data <= "ZZZZZZZZ" when ChipSelect_N = '1' else Data_out;
+	Data <= "ZZZZZZZZ" when ChipSelect_N = '1' or WriteEnable_N = '0' else Data_out;
 	
-	process (ChipSelect_N)
+	process (Clock)
    begin
-      if falling_edge(ChipSelect_N) then
+      if rising_edge(Clock) then
+			WriteEnable_d <= WriteEnable_N;
 			if ChipSelect_N = '0' and OutputEnable_N = '0' then
-				if WriteEnable_N = '1' then
-					Data_out <= CPUMemory(to_integer(unsigned(Address)));
-				else
+				if WriteEnable_N = '0' and WriteEnable_d = '1' then
 					CPUMemory(to_integer(unsigned(Address))) <= Data;
+				else
+					Data_out <= CPUMemory(to_integer(unsigned(Address)));
 				end if;
 			else
 			end if;

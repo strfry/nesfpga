@@ -103,8 +103,8 @@ begin
 	PHI1	<= PHI1_Internal;
 	PHI2	<= PHI2_Internal;
 	
-	SRAMWriteSignal <= not ReadOKSignal when RW_10 = '0' else '1';
-	SRAM_CS_N <= (not PHI2_Internal) or (Address(15) or Address(14) or Address(13));
+	SRAMWriteSignal <= not WriteOKSignal when RW_10 = '0' else '1';
+	SRAM_CS_N <= not PHI2_Internal or (Address(15) or Address(14) or Address(13));
 	
 --to be implemented later
 	A_Rectangle <= '0';
@@ -188,6 +188,7 @@ begin
 			Data		<= DataOutSignal;
 			DataInSignal	<= Data;
 		else
+			Data <= "ZZZZZZZZ";
 			--Data 		<= DataInSignal;
 		end if;
 	end if;
@@ -281,6 +282,7 @@ end process DMATransfer;
 		
 	CPU_RAM : SRAM
 		port map (
+			Clock				=> Global_Clk,
 			ChipSelect_N	=> SRAM_CS_N,
 			WriteEnable_N	=> SRAMWriteSignal,
 			OutputEnable_N	=> '0',

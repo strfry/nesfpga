@@ -171,7 +171,8 @@ begin
 	 
 	Cartridge : CartridgeROM
 	port map (
-			clk => CPU_PHI2,
+			--clk => CPU_PHI2,
+			clk => clk,
 			rstn => rstn,		 
 			PRG_Address => CPU_Address(14 downto 0),
 			PRG_Data => PRG_Data,
