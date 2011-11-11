@@ -172,7 +172,7 @@ begin
 	end if;
 end process;
 
-process (RW_10Signal, ReadOKSignal, WriteOKSignal, PHI2_Internal)
+process (RW_10Signal, ReadOKSignal, WriteOKSignal, PHI2_Internal, DataInSignal, DataOutSignal)
 begin
 	if (RW_10Signal = '1') then --reading
 		if (PHI2_Internal = '0') then

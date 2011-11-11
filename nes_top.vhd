@@ -102,9 +102,9 @@ begin
         end if;
     end process;
 	 
-	 process (CLK)
+	 process (TFT_Clock)
 	 begin
-		if rising_edge(CLK) then
+		if rising_edge(TFT_Clock) then
 --			if unsigned(HDMI_FB_Address) < 57344 then
 				HDMI_FB_Color <= fb_ram(to_integer(unsigned(HDMI_FB_Address)));
 --			else
@@ -172,7 +172,7 @@ begin
 	Cartridge : CartridgeROM
 	port map (
 			--clk => CPU_PHI2,
-			clk => clk,
+			clk => NES_Clock,
 			rstn => rstn,		 
 			PRG_Address => CPU_Address(14 downto 0),
 			PRG_Data => PRG_Data,
@@ -211,7 +211,7 @@ begin
 		CLKIN_PERIOD => 10.0, -- Specify period of input clock in ns from 1.25 to 1000.00
 		CLKOUT_PHASE_SHIFT => "NONE", -- Specify phase shift mode of NONE or FIXED
 		CLK_FEEDBACK => "1X",         -- Specify clock feedback of NONE or 1X
-		DCM_PERFORMANCE_MODE => "MAX_SPEED",   -- Can be MAX_SPEED or MAX_RANGE
+		DCM_PERFORMANCE_MODE => "MAX_RANGE",   -- Can be MAX_SPEED or MAX_RANGE
 		DESKEW_ADJUST => "SYSTEM_SYNCHRONOUS", -- SOURCE_SYNCHRONOUS, SYSTEM_SYNCHRONOUS or
 															--   an integer from 0 to 15
 		DFS_FREQUENCY_MODE => "LOW",   -- LOW or HIGH frequency mode for frequency synthesis

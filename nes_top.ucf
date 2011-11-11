@@ -39,7 +39,7 @@
  #NET "Led<7>"  LOC = "AE11"; # Bank = 22, Pin name = IO_L16N_22,     Sch name = LD7
  #NET "BTN<0>"	LOC = "G6";
  #NET "BTN<1>"  LOC = "G7";
-#Created by Constraints Editor (xc5vlx50t-ff1136-2) - 2011/10/07
-#Created by Constraints Editor (xc5vlx50t-ff1136-2) - 2011/11/08
-NET "clk" TNM_NET = clk;
-TIMESPEC TS_clk = PERIOD "clk" 10 ns HIGH 50%;
+#Created by Constraints Editor (xc5vlx50t-ff1136-2) - 2011/11/11
+NET "CLK" TNM_NET = CLK;
+TIMESPEC TS_CLK = PERIOD "CLK" 10 ns HIGH 50%;
+

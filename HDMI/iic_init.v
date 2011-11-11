@@ -120,7 +120,7 @@ module iic_init(
 parameter C_I2C_SLAVE_ADDR = 7'b1110110;
 
 parameter CLK_RATE_MHZ = 100,  
-          SCK_PERIOD_US = 30, 
+          SCK_PERIOD_US = 60, 
           TRANSITION_CYCLE = (CLK_RATE_MHZ * SCK_PERIOD_US) / 2,
           TRANSITION_CYCLE_MSB = 11;  
 
