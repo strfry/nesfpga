@@ -25,71 +25,46 @@ use UNISIM.vcomponents.all;
 
 entity Clock_Divider is
 	port(Clk_In, Reset_N, Enable : in std_logic;
-		Clk_Out : out std_logic;
-		Clk_Out_Phi2 : out std_logic;
-		Clk_Out_AddOK : out std_logic;
-		Clk_Out_WriteOK : out std_logic;
-		Clk_Out_ReadOK : out std_logic;
-		In_Out : buffer std_logic := '0');
+		PHI1_CE : out std_logic;
+		PHI2 : out std_logic;
+		AddOK_CE : out std_logic;
+		WriteOK_CE : out std_logic;
+		ReadOK_CE : out std_logic
+	);
 end Clock_Divider;
 
 architecture Behavior of Clock_Divider is
-constant Duty : unsigned (3 downto 0) := "1000";	--5 cycle duty cycle
+constant Duty : unsigned (3 downto 0) := "0111";	--5 cycle duty cycle
 constant Total : unsigned (3 downto 0) := "1011";--"1011";	--12 cycles total
 constant WriteOK : unsigned (3 downto 0) := "0010";	--Read 2 cycles into Phi2
 constant ReadOK : unsigned (3 downto 0) := "0101";	--Read 3 cycles into Phi2
-constant AddOK : unsigned (3 downto 0) := "1001";  --Address valid 1 cycle into Phi1
+constant AddOK : unsigned (3 downto 0) := "1000";  --Address valid 1 cycle into Phi1
 signal Count_Out_W : unsigned (3 downto 0);
-
-signal PLL_FB : std_logic;
 
 
 begin
-	PLL_BASE_inst : PLL_BASE
-	generic map (
-		BANDWIDTH => "OPTIMIZED",  -- "HIGH", "LOW" or "OPTIMIZED" 
-		CLKFBOUT_MULT => 4,        -- Multiplication factor for all output clocks
-		CLKFBOUT_PHASE => 0.0,     -- Phase shift (degrees) of all output clocks
-		CLKIN_PERIOD => 10.000,     -- Clock period (ns) of input clock on CLKIN
-		CLKOUT0_DIVIDE => 48,       -- Division factor for CLKOUT0  (1 to 128)
-		CLKOUT0_DUTY_CYCLE => 0.3333, -- Duty cycle for CLKOUT0 (0.01 to 0.99)
-		CLKOUT0_PHASE => 0.0,      -- Phase shift (degrees) for CLKOUT0 (0.0 to 360.0)
-		CLKOUT1_DIVIDE => 48,       -- Division factor for CLKOUT1 (1 to 128)
-		CLKOUT1_DUTY_CYCLE => 0.6666, -- Duty cycle for CLKOUT1 (0.01 to 0.99)
-		CLKOUT1_PHASE => 120.0,      -- Phase shift (degrees) for CLKOUT1 (0.0 to 360.0)
-		CLKOUT2_DIVIDE => 48,       -- Division factor for CLKOUT2 (1 to 128)
-		CLKOUT2_DUTY_CYCLE => 0.4166, -- Duty cycle for CLKOUT2 (0.01 to 0.99)
-		CLKOUT2_PHASE => 30.0,      -- Phase shift (degrees) for CLKOUT2 (0.0 to 360.0)
-		CLKOUT3_DIVIDE => 48,       -- Division factor for CLKOUT3 (1 to 128)
-		CLKOUT3_DUTY_CYCLE => 0.5, -- Duty cycle for CLKOUT3 (0.01 to 0.99)
-		CLKOUT3_PHASE => 180.0,      -- Phase shift (degrees) for CLKOUT3 (0.0 to 360.0)
-		CLKOUT4_DIVIDE => 48,       -- Division factor for CLKOUT4 (1 to 128)
-		CLKOUT4_DUTY_CYCLE => 0.25, -- Duty cycle for CLKOUT4 (0.01 to 0.99)
-		CLKOUT4_PHASE => 300.0,      -- Phase shift (degrees) for CLKOUT4 (0.0 to 360.0)
-		CLKOUT5_DIVIDE => 1,       -- Division factor for CLKOUT5 (1 to 128)
-		CLKOUT5_DUTY_CYCLE => 0.5, -- Duty cycle for CLKOUT5 (0.01 to 0.99)
-		CLKOUT5_PHASE => 0.0,      -- Phase shift (degrees) for CLKOUT5 (0.0 to 360.0)
-		COMPENSATION => "SYSTEM_SYNCHRONOUS",  -- "SYSTEM_SYNCHRNOUS", 
-															-- "SOURCE_SYNCHRNOUS", "INTERNAL", 
-															-- "EXTERNAL", "DCM2PLL", "PLL2DCM" 
-		DIVCLK_DIVIDE => 1,      -- Division factor for all clocks (1 to 52)
-		REF_JITTER => 0.100)     -- Input reference jitter (0.000 to 0.999 UI%)
-	port map (
-		CLKFBOUT => PLL_FB,      -- General output feedback signal
-		CLKOUT0 => Clk_Out,        -- One of six general clock output signals
-		CLKOUT1 => Clk_Out_Phi2,        -- One of six general clock output signals
-		CLKOUT2 => Clk_Out_AddOK,        -- One of six general clock output signals
-		CLKOUT3 => Clk_Out_WriteOK,        -- One of six general clock output signals
-		CLKOUT4 => Clk_Out_ReadOK,        -- One of six general clock output signals
-		CLKOUT5 => open,        -- One of six general clock output signals
-		LOCKED => open,          -- Active high PLL lock signal
-		CLKFBIN => PLL_FB,        -- Clock feedback input
-		CLKIN => Clk_In,            -- Clock input
-		RST => "not"(Reset_N)                 -- Asynchronous PLL reset
-	);
 
-	--Debugging
-	In_Out <= Clk_In;
+	PHI1_CE <= '1' when Count_Out_W = Duty else '0';
+	PHI2 <= '1' when Count_Out_W < Duty else '0';
+	AddOK_CE <= '1' when Count_Out_W = AddOK else '0';
+	ReadOK_CE <= '1' when Count_Out_W = ReadOK else '0';
+	WriteOK_CE <= '1' when Count_Out_W = WriteOK else '0';
+
+	process(Clk_In, Reset_N)
+	begin
+		if Reset_N = '0' then
+			Count_Out_W <= (others => '0');	
+		elsif rising_edge(Clk_In) then
+			if Enable = '1' then
+				if Count_Out_W = Total then
+					Count_Out_W <= (others => '0');
+				else
+					Count_Out_W <= Count_Out_W + 1;
+				end if;
+			end if;
+		end if;
+	end process;
+
 --	
 --	Count : process(Clk_In, Reset_N)
 --	begin

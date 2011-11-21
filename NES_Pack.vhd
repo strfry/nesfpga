@@ -20,7 +20,6 @@ package NES_Pack is
             Data            : inout std_logic_vector(7 downto 0);
             Address         : buffer std_logic_vector(15 downto 0);
             RW_10           : buffer std_logic;     --low if writing, high if reading
-            PHI1            : out std_logic;
             PHI2            : out std_logic;    --Clock Divider Output
             
             --Controller Outputs
@@ -38,7 +37,6 @@ package NES_Pack is
             W_4016_2    : out std_logic;
             
             --Debugging
-            ClockDividerTrigger : buffer std_logic;
             --LCycle : out std_logic_vector(2 downto 0);
             --MCycle : out std_logic_vector(2 downto 0);
             --InitialReset : out std_logic;

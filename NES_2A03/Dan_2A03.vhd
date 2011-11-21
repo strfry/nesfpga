@@ -16,7 +16,7 @@ entity NES_2A03 is
 		Data 			: inout std_logic_vector(7 downto 0);
 		Address 		: buffer std_logic_vector(15 downto 0);
 		RW_10			: buffer std_logic;		--low if writing, high if reading
-		PHI1			: out std_logic;
+		
 		PHI2 			: out std_logic;	--Clock Divider Output
 		
 		--Controller Outputs
@@ -34,7 +34,6 @@ entity NES_2A03 is
 		W_4016_2 	: out std_logic;
 		
 		--Debugging
-		ClockDividerTrigger : buffer std_logic;
 		--LCycle : out std_logic_vector(2 downto 0);
 		--MCycle : out std_logic_vector(2 downto 0);
 		--InitialReset : out std_logic;
@@ -51,7 +50,7 @@ end NES_2A03;
 
 architecture Behavioral of NES_2A03 is
 	--Clock Control
-	signal PHI1_Internal	: std_logic;
+	signal PHI1_CE			: std_logic;
 	signal PHI2_Internal	: std_logic;
 	
 	--Internal Status Registers
@@ -100,10 +99,9 @@ architecture Behavioral of NES_2A03 is
 begin
 --more or less constant assignments
 	Global_Enable	<=	'1';
-	PHI1	<= PHI1_Internal;
 	PHI2	<= PHI2_Internal;
 	
-	SRAMWriteSignal <= not WriteOKSignal when RW_10 = '0' else '1';
+	SRAMWriteSignal <= not ReadOKSignal when RW_10 = '0' else '1';
 	SRAM_CS_N <= not PHI2_Internal or (Address(15) or Address(14) or Address(13));
 	
 --to be implemented later
@@ -154,13 +152,13 @@ with BusControl select DataOutSignal <=
 	DMADataOut when others;
 
 --Bus stuff
-process (Reset_N, AddOKSignal)
+process (Reset_N, Global_Clk)
 begin
 	if (Reset_N = '0') then
 		DMAEnable <= '0';
 		Address <= x"0000";
-	else
-		if AddOKSignal'event and AddOKSignal = '1' then
+	elsif rising_edge(Global_Clk) then
+		if AddOKSignal = '1' then
 			RW_10 <= RW_10Signal;
 			Address <= AddressSignal;
 			if (T65Address = x"4014") then
@@ -172,24 +170,25 @@ begin
 	end if;
 end process;
 
-process (RW_10Signal, ReadOKSignal, WriteOKSignal, PHI2_Internal, DataInSignal, DataOutSignal)
+process (Global_Clk)
 begin
-	if (RW_10Signal = '1') then --reading
-		if (PHI2_Internal = '0') then
-			Data <= DataInSignal; --might be causing big-ass problems
-		else
-			Data <= "ZZZZZZZZ";
-			if (ReadOKSignal = '1') then
-				DataInSignal <= Data;
+	if rising_edge(Global_Clk) then
+		if RW_10Signal = '1' then --reading
+			if (PHI2_Internal = '0') then
+				Data <= DataInSignal; --might be causing big-ass problems
+			else
+				Data <= "ZZZZZZZZ";
+				if (ReadOKSignal = '1') then
+					DataInSignal <= Data;
+				end if;
 			end if;
-		end if;
-	else --writing
-		if (PHI2_Internal = '1' and WriteOKSignal = '1') then
-			Data		<= DataOutSignal;
-			DataInSignal	<= Data;
-		else
-			Data <= "ZZZZZZZZ";
-			--Data 		<= DataInSignal;
+		else --writing
+			if PHI2_Internal = '1' and WriteOKSignal = '1' then
+				Data		<= DataOutSignal;
+				DataInSignal	<= Data;
+			elsif PHI2_Internal = '0' then
+				Data <= "ZZZZZZZZ";
+			end if;
 		end if;
 	end if;
 end process;
@@ -247,23 +246,19 @@ end process DMATransfer;
 			Clk_In				=> Global_Clk,
 			Reset_N				=> Reset_N,
 			Enable				=> Global_Enable,
-			Clk_Out				=> PHI1_Internal,
-			Clk_Out_Phi2		=> PHI2_Internal,
-			Clk_Out_AddOK 		=> AddOKSignal,
-			Clk_Out_WriteOK	=> WriteOKSignal,
-			Clk_Out_ReadOK		=> ReadOKSignal,
-			In_Out	 			=> ClockDividerTrigger
+			PHI1_CE				=> PHI1_CE,
+			PHI2					=> PHI2_Internal,
+			AddOK_CE		 		=> AddOKSignal,
+			WriteOK_CE			=> WriteOKSignal,
+			ReadOK_CE			=> ReadOKSignal
 		);
 	
 	NES_2A03 : T65
 		port map (
 			Mode			=> "00",
 			Res_n			=> Reset_N,
-			Enable		=> T65Enable,
-			Clk			=> PHI1_Internal,
-			Clk_Phi2		=> PHI2_Internal,
-			Clk_AddOK 	=> AddOKSignal,
-			Clk_ReadOK 	=> ReadOKSignal,
+			Enable		=> T65Enable and PHI1_CE,
+			Clk			=> Global_Clk,
 			Rdy     		=> '1',	--used for single-cycle execution, not used in 2A03
 			--Abort_n		=> '0',	--not used at all
 			IRQ_n   		=> IRQ_N,
@@ -285,7 +280,7 @@ end process DMATransfer;
 			Clock				=> Global_Clk,
 			ChipSelect_N	=> SRAM_CS_N,
 			WriteEnable_N	=> SRAMWriteSignal,
-			OutputEnable_N	=> '0',
+			OutputEnable_N	=> "not"(RW_10),
 			Address			=> Address (10 downto 0),
 			Data				=> Data
 		);

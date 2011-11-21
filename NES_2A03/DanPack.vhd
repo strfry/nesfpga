@@ -10,9 +10,6 @@ package Pack_2A03 is
 		Res_n   : in  std_logic;
 		Enable  : in  std_logic;
 		Clk     : in  std_logic;
-		Clk_Phi2: in  std_logic;
-		Clk_AddOK : in std_logic;
-		Clk_ReadOK : in std_logic;
 		Rdy     : in  std_logic;
 		--Abort_n : in  std_logic;
 		IRQ_n   : in  std_logic;
@@ -35,15 +32,13 @@ package Pack_2A03 is
 	end component;
 	
 	component Clock_Divider
-	port(
-		Clk_In, Reset_N, Enable: in std_logic;
-		Clk_Out : out std_logic;
-		Clk_Out_Phi2 : out std_logic;
-		Clk_Out_AddOK : out std_logic;
-		Clk_Out_WriteOK : out std_logic;
-		Clk_Out_ReadOK : out std_logic;
-		In_Out : buffer std_logic
-		);
+	port(Clk_In, Reset_N, Enable : in std_logic;
+		PHI1_CE : out std_logic;
+		PHI2 : out std_logic;
+		AddOK_CE : out std_logic;
+		WriteOK_CE : out std_logic;
+		ReadOK_CE : out std_logic
+	);
 	end component;
 	
 	component SRAM

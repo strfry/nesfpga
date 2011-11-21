@@ -25,24 +25,33 @@ architecture Behavioral of SRAM is
 	signal CPUMemory : Memory := (others => (others => 'U'));
 	
 	signal Data_out : std_logic_vector (7 downto 0);
-	signal WriteEnable_d : std_logic;
 	
 begin
 	
-	Data <= "ZZZZZZZZ" when ChipSelect_N = '1' or WriteEnable_N = '0' else Data_out;
-	
+	Data <= "ZZZZZZZZ" when ChipSelect_N = '1' or WriteEnable_N = '0' or OutputEnable_N = '1' else Data_out;
+--	
+--	process (Clock)
+--   begin
+--      if rising_edge(Clock) then
+--			WriteEnable_d <= WriteEnable_N;
+--			if ChipSelect_N = '0' and OutputEnable_N = '0' then
+--				if WriteEnable_N = '0' and WriteEnable_d = '1' then
+--					CPUMemory(to_integer(unsigned(Address))) <= Data;
+--				else
+--					Data_out <= CPUMemory(to_integer(unsigned(Address)));
+--				end if;
+--			else
+--			end if;
+--		end if;
+--	end process;
 	process (Clock)
    begin
       if rising_edge(Clock) then
-			WriteEnable_d <= WriteEnable_N;
-			if ChipSelect_N = '0' and OutputEnable_N = '0' then
-				if WriteEnable_N = '0' and WriteEnable_d = '1' then
-					CPUMemory(to_integer(unsigned(Address))) <= Data;
-				else
-					Data_out <= CPUMemory(to_integer(unsigned(Address)));
-				end if;
-			else
+			if WriteEnable_N = '0' and ChipSelect_N = '0' then
+				CPUMemory(to_integer(unsigned(Address))) <= Data;
 			end if;
+			
+			Data_out <= CPUMemory(to_integer(unsigned(Address)));
 		end if;
 	end process;
 	

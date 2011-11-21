@@ -125,7 +125,6 @@ begin
         Address => CPU_Address,
         RW_10 => CPU_RW,
         
-        PHI1 => open,
         PHI2 => CPU_PHI2,
         
         CStrobe => open,
@@ -138,7 +137,6 @@ begin
         W_4016_1 => open,
         W_4016_2 => open,
         
-        ClockDividerTrigger => open,
         AddOKDebug => open,
         ReadOKDebug => open,
         WriteOKDebug => open,
@@ -171,8 +169,8 @@ begin
 	 
 	Cartridge : CartridgeROM
 	port map (
-			--clk => CPU_PHI2,
-			clk => NES_Clock,
+			clk => CPU_PHI2,
+			--clk => NES_Clock,
 			rstn => rstn,		 
 			PRG_Address => CPU_Address(14 downto 0),
 			PRG_Data => PRG_Data,
@@ -183,7 +181,7 @@ begin
 	
 	HDMIOut : HDMIController
 	port map (
-		CLK => CLK,
+		CLK => TFT_Clock,
 		RSTN => RSTN,
 		CLK_25 => TFT_Clock,
 		

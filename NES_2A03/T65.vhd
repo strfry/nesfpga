@@ -74,9 +74,7 @@ entity T65 is
 		Res_n   : in  std_logic;
 		Enable  : in  std_logic;
 		Clk     : in  std_logic;
-		Clk_Phi2: in  std_logic;--added for compatibility
-		Clk_AddOK : in std_logic;
-		Clk_ReadOK : in std_logic;
+		
 		Rdy     : in  std_logic;
 		--Abort_n : in  std_logic;
 		IRQ_n   : in  std_logic;

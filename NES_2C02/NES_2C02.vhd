@@ -51,6 +51,7 @@ architecture arch of NES_2C02 is
 	signal Status_2000 : std_logic_vector(7 downto 0) := "00000000";
 	signal Status_2001 : std_logic_vector(7 downto 0) := "00000000";
 		
+	signal Data_in_d : std_logic_vector(7 downto 0) := "00000000";
 	signal CPUPortDir : std_logic;
 	
 	signal ChipSelect_delay : std_logic;
@@ -252,81 +253,83 @@ begin
 	CPU_PORT : process (clk)
 	begin	
 		if rising_edge(clk) and CE = '1' then	
-			if HPOS >= 0 and HPOS < 3 and VPOS = 0 then -- Start VBlank period
-				VBlankFlag <= '1';
-			elsif HPOS >= 0 and HPOS < 3 and VPOS = 20 then -- End VBlank Period
-				VBlankFlag <= '0';
+			if CE = '1' then
+				if HPOS >= 0 and HPOS < 3 and VPOS = 0 then -- Start VBlank period
+					VBlankFlag <= '1';
+				elsif HPOS >= 0 and HPOS < 3 and VPOS = 20 then -- End VBlank Period
+					VBlankFlag <= '0';
+				end if;
+			
+				CPUVRAMWrite <= '0';
+				CPUVRAMRead <= '0';
 			end if;
 			
-			CPUVRAMWrite <= '0';
-			CPUVRAMRead <= '0';
-			
+
 			ChipSelect_delay <= ChipSelect_n;
+			Data_in_d <= Data_in;
 				
-			-- workaround for seemingly asynchronous ChipSelect
-			if ChipSelect_n = '0' and ChipSelect_delay = '1' then
-				if ReadWrite = '0' then
-					if Address = "000" then
-						Status_2000 <= Data_in;
-					elsif Address = "001" then
-						Status_2001 <= Data_in;
-					elsif Address = "011" then
-						SpriteMemAddress <= unsigned(Data_in);
-					elsif Address = "100" then
-						SpriteMemData(to_integer(SpriteMemAddress)) <= Data_in;
-						SpriteMemAddress <= SpriteMemAddress + 1;
-					elsif Address = "101" then
-						if CPUPortDir = '0' then
-							if unsigned(Data_in) <= 239 then
-								VerticalScrollOffset <= unsigned(Data_in);
-							end if;
-						else
-							HorizontalScrollOffset <= unsigned(Data_in);
-						end if;
-						
-						CPUPortDir <= not CPUPortDir;
-					elsif Address = "110" then
-						if CPUPortDir = '0' then
-							CPUVRAMAddress(13 downto 8) <= unsigned(Data_in(5 downto 0));
-						else
-							CPUVRAMAddress(7 downto 0) <= unsigned(Data_in);
-						end if;
-						CPUPortDir <= not CPUPortDir;
-					elsif Address = "111" then
-						CPUVRAMWrite <= '1';
-						PPU_Data_w <= Data_in;
-						if (Status_2000(2) = '0') then
-							CPUVRAMAddress <= CPUVRAMAddress + 1;
-						else
-							CPUVRAMAddress <= CPUVRAMAddress + 32;
-						end if;
-					end if;
-				else
-					if Address = "000" then
-						Data_out <= Status_2000;
-					elsif Address = "001" then
-						Data_out <= Status_2001;
-					elsif Address = "010" then
-						--Data_out <= (6 => HitSpriteFlag, 7 => VBlankFlag, others => '0');
-						Data_out <= (6 => HitSpriteFlag, 7 => '1', others => '0');
-						CPUPortDir <= '0';
-						if VBlankFlag = '1' then
-							VBlankFlag <= '0';
-						end if;
-					elsif Address = "100" then
-						Data_out <= SpriteMemData(to_integer(SpriteMemAddress));
-						SpriteMemAddress <= SpriteMemAddress + 1;
-					elsif Address = "111" then
-						Data_out <= PPU_Data_r;
-						CPUVRAMRead <= '1';
-						if (Status_2000(2) = '0') then
-							CPUVRAMAddress <= CPUVRAMAddress + 1;
-						else
-							CPUVRAMAddress <= CPUVRAMAddress + 32;
+			-- Do reads on low CS, and writes on rising edge
+			
+			if ChipSelect_n = '1' and ChipSelect_delay = '0' and ReadWrite = '0' then
+				if Address = "000" then
+					Status_2000 <= Data_in_d;
+				elsif Address = "001" then
+					Status_2001 <= Data_in_d;
+				elsif Address = "011" then
+					SpriteMemAddress <= unsigned(Data_in_d);
+				elsif Address = "100" then
+					SpriteMemData(to_integer(SpriteMemAddress)) <= Data_in_d;
+					SpriteMemAddress <= SpriteMemAddress + 1;
+				elsif Address = "101" then
+					if CPUPortDir = '0' then
+						if unsigned(Data_in_d) <= 239 then
+							VerticalScrollOffset <= unsigned(Data_in_d);
 						end if;
 					else
-						Data_out <= (others => 'X'); -- This should be a write only register
+						HorizontalScrollOffset <= unsigned(Data_in_d);
 					end if;
+					CPUPortDir <= not CPUPortDir;						
+				elsif Address = "110" then
+					if CPUPortDir = '0' then
+						CPUVRAMAddress(13 downto 8) <= unsigned(Data_in_d(5 downto 0));
+					else
+						CPUVRAMAddress(7 downto 0) <= unsigned(Data_in_d);
+					end if;						
+					CPUPortDir <= not CPUPortDir;					
+				elsif Address = "111" then
+					CPUVRAMWrite <= '1';
+					PPU_Data_w <= Data_in_d;
+					if (Status_2000(2) = '0') then
+						CPUVRAMAddress <= CPUVRAMAddress + 1;
+					else
+						CPUVRAMAddress <= CPUVRAMAddress + 32;
+					end if;
+				end if;
+			elsif ChipSelect_n = '0' and ReadWrite = '1' then
+				if Address = "000" then
+					Data_out <= Status_2000;
+				elsif Address = "001" then
+					Data_out <= Status_2001;
+				elsif Address = "010" then
+					--Data_out <= (6 => HitSpriteFlag, 7 => VBlankFlag, others => '0');
+					Data_out <= (6 => HitSpriteFlag, 7 => '1', others => '0');
+					CPUPortDir <= '0';
+					if VBlankFlag = '1' then
+						VBlankFlag <= '0';
+					end if;
+				elsif Address = "100" then
+					Data_out <= SpriteMemData(to_integer(SpriteMemAddress));
+					SpriteMemAddress <= SpriteMemAddress + 1;
+				elsif Address = "111" then
+					Data_out <= PPU_Data_r;
+					CPUVRAMRead <= '1';
+					if (Status_2000(2) = '0') then
+						CPUVRAMAddress <= CPUVRAMAddress + 1;
+					else
+						CPUVRAMAddress <= CPUVRAMAddress + 32;
+					end if;
+				else
+					Data_out <= (others => 'X'); -- This should be a write only register
 				end if;
 			end if;
 		end if;
