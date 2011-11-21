@@ -58,6 +58,7 @@ architecture Behavioral of NES_2A03 is
 	
 	--T65 Control
 	signal	T65Enable 	: std_logic;
+	signal	T65DMADisable 	: std_logic;
 	signal	T65RW_10 	: std_logic := '0';
 	signal	T65Address	: std_logic_vector (15 downto 0);
 	signal	T65DataIn	: std_logic_vector(7 downto 0);
@@ -100,6 +101,8 @@ begin
 --more or less constant assignments
 	Global_Enable	<=	'1';
 	PHI2	<= PHI2_Internal;
+	
+	T65Enable <= PHI1_CE and not T65DMADisable;
 	
 	SRAMWriteSignal <= not ReadOKSignal when RW_10 = '0' else '1';
 	SRAM_CS_N <= not PHI2_Internal or (Address(15) or Address(14) or Address(13));
@@ -193,49 +196,51 @@ begin
 	end if;
 end process;
 
-DMATransfer : process (Reset_N, PHI2_Internal)
+DMATransfer : process (Reset_N, Global_Clk)
 begin
 	if (Reset_N = '0') then
 		TransferCount		<= "0000000000";
 		TransferAddress	<= "0000000000000000";
 		DMAContinue <= '0';
-		T65Enable <= '1';
+		T65DMADisable <= '0';
 		BusControl <= '0';
 		DMARW_10 <= '1';
 		--D
-	elsif (falling_edge(PHI2_Internal)) then  --may need to check timing here
-		if (DMAEnable = '1') then
-			DMAContinue <= '1';
-		end if;
-		if (DMAContinue = '1') then
-			case TransferCount is
-				when "0000000000" =>
-					DMAAddress	<= T65DataOut & "00000000";
-					TransferAddress <= unsigned(T65DataOut & "00000000") + 1;
-					T65Enable <= '0';
-					BusControl <= '1';
-					TransferCount <= "0000000001";
-				when "1000000000" =>
-					T65Enable <= '1';
-					BusControl <= '0';
-					TransferCount <= "0000000000";
-					DMAContinue <= '0';
-					DMARW_10 <= '1'; --shit dude, it's amazing anything happened without this
-				when others =>
-					T65Enable <= '0';
-					BusControl <= '1';
-					TransferCount <= TransferCount + 1;
-					case TransferCount(0) is
-						when '0' =>
-							DMARW_10 <= '1';
-							DMAAddress <=  std_logic_vector(TransferAddress);
-							TransferAddress <= TransferAddress + 1;
-						when others =>
-							DMARW_10 <= '0';
-							DMAAddress <=  x"2004";
-							DMADataOut <= DMADataIn;
-					end case;
-			end case;
+	elsif rising_edge(Global_Clk) then  --may need to check timing here
+		if PHI1_CE = '1' then
+			if (DMAEnable = '1') then
+				DMAContinue <= '1';
+			end if;
+			if (DMAContinue = '1') then
+				case TransferCount is
+					when "0000000000" =>
+						DMAAddress	<= T65DataOut & "00000000";
+						TransferAddress <= unsigned(T65DataOut & "00000000") + 1;
+						T65DMADisable <= '1';
+						BusControl <= '1';
+						TransferCount <= "0000000001";
+					when "1000000000" =>
+						T65DMADisable <= '0';
+						BusControl <= '0';
+						TransferCount <= "0000000000";
+						DMAContinue <= '0';
+						DMARW_10 <= '1'; --shit dude, it's amazing anything happened without this
+					when others =>
+						T65DMADisable <= '1';
+						BusControl <= '1';
+						TransferCount <= TransferCount + 1;
+						case TransferCount(0) is
+							when '0' =>
+								DMARW_10 <= '1';
+								DMAAddress <=  std_logic_vector(TransferAddress);
+								TransferAddress <= TransferAddress + 1;
+							when others =>
+								DMARW_10 <= '0';
+								DMAAddress <=  x"2004";
+								DMADataOut <= DMADataIn;
+						end case;
+				end case;
+			end if;
 		end if;
 	end if;
 end process DMATransfer;
@@ -257,7 +262,7 @@ end process DMATransfer;
 		port map (
 			Mode			=> "00",
 			Res_n			=> Reset_N,
-			Enable		=> T65Enable and PHI1_CE,
+			Enable		=> T65Enable,
 			Clk			=> Global_Clk,
 			Rdy     		=> '1',	--used for single-cycle execution, not used in 2A03
 			--Abort_n		=> '0',	--not used at all
