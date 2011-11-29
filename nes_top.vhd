@@ -38,7 +38,9 @@ end nes_top;
 architecture arch of nes_top is
 
 	signal DCM_CLK0 : std_logic;
-	signal DCM_Locked : std_logic;
+	signal DCM_Reset : std_logic;
+	signal DCM_Reset_cnt : unsigned(15 downto 0);
+	
 	signal NES_Clock : std_logic;
 	signal TFT_Clock : std_logic;
 	signal VBlank_NMI_n : std_logic;
@@ -78,6 +80,21 @@ begin
 	 CPU_PPU_CS_n <= '0' when CPU_Address(15 downto 3) = "0010000000000" and CPU_PHI2 = '1' else '1';
 	 CPU_PRG_CS_n <= '0' when CPU_Address(15) = '1' and CPU_PHI2 = '1' else '1';
     
+	 DCM_WAIT : process(DCM_CLK0, RSTN)
+	 begin
+		if RSTN = '0' then
+			DCM_Reset_cnt <= (others => '1');
+			DCM_Reset <= '0';
+		elsif rising_edge(DCM_CLK0) then
+			if DCM_Reset_cnt = 0 then
+				DCM_Reset <= '1';
+			else
+				DCM_Reset <= '0';
+				DCM_Reset_cnt <= DCM_Reset_cnt - 1;
+			end if;			
+		end if;
+	 end process;
+	 
     process (CPU_RW, PPU_CPU_Data, PRG_Data, CPU_PPU_CS_n, CPU_PRG_CS_n, CPU_Address)
     begin
         if CPU_RW = '1' then
@@ -117,7 +134,7 @@ begin
     CPU: NES_2A03
     port map (
         Global_Clk => NES_Clock,
-        Reset_N => rstn,
+        Reset_N => DCM_Reset,
         NMI_N => VBlank_NMI_n,
         IRQ_N => '1',
         
@@ -151,7 +168,7 @@ begin
     PPU : NES_2C02
     port map (
         clk => NES_Clock,
-		  rstn => rstn,
+		  rstn => DCM_Reset,
         ChipSelect_n => CPU_PPU_CS_n,
         ReadWrite => CPU_RW,
         Address => CPU_Address(2 downto 0),
@@ -169,9 +186,9 @@ begin
 	 
 	Cartridge : CartridgeROM
 	port map (
-			clk => CPU_PHI2,
-			--clk => NES_Clock,
-			rstn => rstn,		 
+			--clk => CPU_PHI2,
+			clk => NES_Clock,
+			rstn => DCM_Reset,		 
 			PRG_Address => CPU_Address(14 downto 0),
 			PRG_Data => PRG_Data,
         
@@ -182,7 +199,7 @@ begin
 	HDMIOut : HDMIController
 	port map (
 		CLK => TFT_Clock,
-		RSTN => RSTN,
+		RSTN => DCM_Reset,
 		CLK_25 => TFT_Clock,
 		
 		HDMIHSync => HDMIHSync,
@@ -228,7 +245,7 @@ begin
 		CLKDV => TFT_Clock,        -- Divided DCM CLK out (CLKDV_DIVIDE)
 		CLKFX => NES_Clock,   -- DCM CLK synthesis out (M/D)
 		CLKFX180 => open,     -- 180 degree CLK synthesis out
-		LOCKED => DCM_Locked, -- DCM LOCK status output
+		LOCKED => open, -- DCM LOCK status output
 		CLKFB => DCM_CLK0,        -- DCM clock feedback
 		CLKIN => CLK,         -- Clock input (from IBUFG, BUFG or DCM)
 		RST => "not"(RSTN)    -- DCM asynchronous reset input

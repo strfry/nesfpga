@@ -62,7 +62,6 @@ architecture arch of NES_2C02 is
 	signal PPU_Address : unsigned(13 downto 0);
 	signal PPU_Data_r : std_logic_vector(7 downto 0);
 	signal PPU_Data_w : std_logic_vector(7 downto 0);
-	signal PPU_ReadWrite : std_logic; -- Read on 1, write on 0
 --	signal VRAMData_in : std_logic_vector(7 downto 0);
 --	signal VRAMData_out : std_logic_vector(7 downto 0);
 	
@@ -119,38 +118,39 @@ architecture arch of NES_2C02 is
 	);
 	
 	signal PaletteRAM : PaletteRAMType := (
-		0 =>  "000000",
-		1 =>  "000001",
-		2 =>  "000010",
-		3 =>  "000011",
-		4 =>  "000100",
-		5 =>  "000101",
-		6 =>  "000110",
-		7 =>  "000111",
-		8 =>  "001000",
-		9 =>  "001001",
-		10 => "001010",
-		11 => "001011",
-		12 => "001100",
-		13 => "001101",
-		14 => "001110",
-		15 => "001111",
-		16 => "010000",
-		17 => "010001",
-		18 => "010010",
-		19 => "010011",
-		20 => "010100",
-		21 => "010101",
-		22 => "010110",
-		23 => "010111",
-		24 => "011000",
-		25 => "011001",
-		26 => "011010",
-		27 => "011011",
-		28 => "011100",
-		29 => "011101",
-		30 => "011110",
-		31 => "011111"
+--		0 =>  "000000",
+--		1 =>  "000001",
+--		2 =>  "000010",
+--		3 =>  "000011",
+--		4 =>  "000100",
+--		5 =>  "000101",
+--		6 =>  "000110",
+--		7 =>  "000111",
+--		8 =>  "001000",
+--		9 =>  "001001",
+--		10 => "001010",
+--		11 => "001011",
+--		12 => "001100",
+--		13 => "001101",
+--		14 => "001110",
+--		15 => "001111",
+--		16 => "010000",
+--		17 => "010001",
+--		18 => "010010",
+--		19 => "010011",
+--		20 => "010100",
+--		21 => "010101",
+--		22 => "010110",
+--		23 => "010111",
+--		24 => "011000",
+--		25 => "011001",
+--		26 => "011010",
+--		27 => "011011",
+--		28 => "011100",
+--		29 => "011101",
+--		30 => "011110",
+--		31 => "011111"
+		others => "UUUUUU"
 	);
 	
 	type SpriteMemDataType is array(255 downto 0) of std_logic_vector(7 downto 0);
@@ -226,12 +226,17 @@ begin
 				FB_DE <= '1';
 				FB_Address <= std_logic_vector(to_unsigned(VPOS * 256 + HPOS, FB_Address'length));
 				
-				attr_pos := ((VPOS mod 2) * 2) + HPOS mod 2;
+				attr_pos := ((VPOS mod 32) / 16) * 4 + (HPOS mod 32) / 16 * 2;
 				attr_color := unsigned(TilePipeline(0).attr(attr_pos + 1 downto attr_pos));
-				bg_color := attr_color & TilePipeline(0).pattern1(HPOS mod 8) & TilePipeline(0).pattern0(HPOS mod 8);
+				
+				--attr_color := unsigned(TilePipeline(0).attr(1 downto 0));
+				bg_color := attr_color & TilePipeline(0).pattern1(7 - HPOS mod 8) & TilePipeline(0).pattern0(7 - HPOS mod 8);
 				
 				--FB_Color <= std_logic_vector(to_unsigned(HPOS / 16, FB_Color'length));
 				FB_Color <= std_logic_vector(PaletteRAM(to_integer(bg_color)));
+				--FB_Color <= std_logic_vector(PaletteRAM(to_integer(bg_color(1 downto 0))));
+				
+				--FB_Color <= std_logic_vector(to_unsigned(attr_pos, 6));
 				
 				--FB_Color <= "00" & TilePipeline(0).pattern1(HPOS mod 8) & TilePipeline(0).pattern0(HPOS mod 8) & "00";
 				
@@ -239,8 +244,13 @@ begin
 					if SpriteCache(0).x - HPOS < 8 then FB_Color <= "101111"; end if;
 				end if;
 				
+				
+				if VPOS >= 230 then
+					FB_Color <= std_logic_vector(PaletteRAM(HPOS / 8));
+				end if;
+				
 				if HPOS < 0 or HPOS >= 256 or VPOS < 0 or VPOS >= 240 then
-					FB_Color <= "101111";
+					FB_Color <= "000000";
 				end if;
 				
 			else
@@ -252,7 +262,7 @@ begin
 	
 	CPU_PORT : process (clk)
 	begin	
-		if rising_edge(clk) and CE = '1' then	
+		if rising_edge(clk) then	
 			if CE = '1' then
 				if HPOS >= 0 and HPOS < 3 and VPOS = 0 then -- Start VBlank period
 					VBlankFlag <= '1';
@@ -281,35 +291,42 @@ begin
 				
 			-- Do reads on low CS, and writes on rising edge
 			
-			if ChipSelect_n = '1' and ChipSelect_delay = '0' and ReadWrite = '0' then
-				if Address = "000" then
-					Status_2000 <= Data_in_d;
-				elsif Address = "001" then
-					Status_2001 <= Data_in_d;
-				elsif Address = "011" then
-					SpriteMemAddress <= unsigned(Data_in_d);
-				elsif Address = "100" then
-					SpriteMemData(to_integer(SpriteMemAddress)) <= Data_in_d;
-					SpriteMemAddress <= SpriteMemAddress + 1;
-				elsif Address = "101" then
-					if CPUPortDir = '0' then
-						if unsigned(Data_in_d) <= 239 then
-							VerticalScrollOffset <= unsigned(Data_in_d);
+			if ChipSelect_n = '1' and ChipSelect_delay = '0' then
+				if ReadWrite = '0' then
+					if Address = "000" then
+						Status_2000 <= Data_in_d;
+					elsif Address = "001" then
+						Status_2001 <= Data_in_d;
+					elsif Address = "011" then
+						SpriteMemAddress <= unsigned(Data_in_d);
+					elsif Address = "100" then
+						SpriteMemData(to_integer(SpriteMemAddress)) <= Data_in_d;
+						SpriteMemAddress <= SpriteMemAddress + 1;
+					elsif Address = "101" then
+						if CPUPortDir = '0' then
+							if unsigned(Data_in_d) <= 239 then
+								VerticalScrollOffset <= unsigned(Data_in_d);
+							end if;
+						else
+							HorizontalScrollOffset <= unsigned(Data_in_d);
 						end if;
-					else
-						HorizontalScrollOffset <= unsigned(Data_in_d);
+						CPUPortDir <= not CPUPortDir;						
+					elsif Address = "110" then
+						if CPUPortDir = '0' then
+							CPUVRAMAddress(13 downto 8) <= unsigned(Data_in_d(5 downto 0));
+						else
+							CPUVRAMAddress(7 downto 0) <= unsigned(Data_in_d);
+						end if;						
+						CPUPortDir <= not CPUPortDir;					
+					elsif Address = "111" then
+						CPUVRAMWrite <= '1';
+						PPU_Data_w <= Data_in_d;
 					end if;
-					CPUPortDir <= not CPUPortDir;						
-				elsif Address = "110" then
-					if CPUPortDir = '0' then
-						CPUVRAMAddress(13 downto 8) <= unsigned(Data_in_d(5 downto 0));
-					else
-						CPUVRAMAddress(7 downto 0) <= unsigned(Data_in_d);
-					end if;						
-					CPUPortDir <= not CPUPortDir;					
-				elsif Address = "111" then
-					CPUVRAMWrite <= '1';
-					PPU_Data_w <= Data_in_d;
+				elsif Address = "010" then
+					CPUPortDir <= '0';
+					if VBlankFlag = '1' then
+						VBlankFlag <= '0';
+					end if; -- Reset VBlankFlag only once on write event
 				end if;
 			
 			elsif ChipSelect_n = '0' and ReadWrite = '1' then
@@ -320,10 +337,6 @@ begin
 				elsif Address = "010" then
 					--Data_out <= (6 => HitSpriteFlag, 7 => VBlankFlag, others => '0');
 					Data_out <= (6 => HitSpriteFlag, 7 => '1', others => '0');
-					CPUPortDir <= '0';
-					if VBlankFlag = '1' then
-						VBlankFlag <= '0';
-					end if;
 				elsif Address = "100" then
 					Data_out <= SpriteMemData(to_integer(SpriteMemAddress));
 					SpriteMemAddress <= SpriteMemAddress + 1;
@@ -337,29 +350,38 @@ begin
 		end if;
 	end process;
 	
-	process(clk, rstn)
-	variable address : integer;
+	TILE_PREFETCH : process(clk, rstn)
+		variable address : integer;
+		variable Prefetch_XPOS : integer;
+		variable Prefetch_YPOS : integer;
 	begin
 		if rstn = '0' then
 			PPU_Address <= (others => '0');
 		elsif rising_edge(clk) and CE = '1' then
 			address := 0;
 			
-			PPU_ReadWrite <= '1';
+			Prefetch_XPOS := HPOS + 16;
+			if HPOS > 240 then
+				Prefetch_YPOS := (VPOS + 1);
+			else 
+				Prefetch_YPOS := VPOS;
+			end if;
+			
 			--PPU_Address <= (others => '0');
 			
-			if HPOS >= 0 and HPOS < 256 and VPOS >= 0 and VPOS < 240 then
+			if Prefetch_XPOS >= 0 and Prefetch_XPOS < 256 and Prefetch_YPOS >= 0 and Prefetch_YPOS < 240 then
 				case HPOS mod 8 is
 					when 0 =>
 						TilePipeline(1).pattern1 <= PPU_Data_r;
-						address := 8192 + HPOS / 8 + VPOS / 8 * 32;
+						--TilePipeline(1).pattern1 <= "00110011";
+						address := 8192 + Prefetch_XPOS / 8 + (Prefetch_YPOS / 8) * 32;
 						PPU_Address <= to_unsigned(address, PPU_Address'length);
 					when 1 =>
 					when 2 =>
 						BGTileName <= unsigned(PPU_Data_r);
 						--BGTileName <= X"24";
 						--BGTileName <= to_unsigned(8192 + HPOS / 8 + VPOS / 8 * 32, 8);
-						address :=  9152 + HPOS / 32 + VPOS / 32 * 32;
+						address :=  9152 + (Prefetch_XPOS - 2) / 32 + (Prefetch_YPOS / 32) * 8;
 						PPU_Address <= to_unsigned(address, PPU_Address'length);
 					when 3 =>
 					when 4 =>
@@ -368,16 +390,17 @@ begin
 							address := 4096;
 						end if;
 						
-						address := address + to_integer(BGTileName * 16 + (VPOS mod 8) * 2);
+						address := address + to_integer(BGTileName * 16 + (Prefetch_YPOS mod 8));
 						PPU_Address <=  to_unsigned(address, PPU_Address'length);
 					when 5 =>
 					when 6 =>
 						TilePipeline(2).pattern0 <= PPU_Data_r;
---						if Status_2000(4) = '1' then
+						--TilePipeline(2).pattern0 <= "00001111";
+						if Status_2000(4) = '1' then
 							address := 4096;
---						end if;
+						end if;
 						
-						address := address + to_integer(BGTileName * 16 + (VPOS mod 8) * 2 + 1);
+						address := address + to_integer(BGTileName * 16 + (Prefetch_YPOS mod 8) + 8);
 						PPU_Address <=  to_unsigned(address, PPU_Address'length);
 						
 					when 7 =>
@@ -401,7 +424,7 @@ begin
 				InternalRW := '0';
 				InternalAddress := CPUVRAMAddress;
 			else
-				InternalRW := PPU_ReadWrite;
+				InternalRW := '1';
 				InternalAddress := PPU_Address;
 			end if;
 			
@@ -459,7 +482,7 @@ begin
 					currentSprite.attr := unsigned(SpriteMemData(SpriteCounter * 4 + 3));
 				else
 					if currentSprite.y - VPOS < 8 and currentSprite.y - VPOS > 0 and SpritesFound < 8 then
-						SpriteCache(SpriteCounter) <= currentSprite;
+						SpriteCache(SpritesFound) <= currentSprite;
 						
 						SpritesFound <= SpritesFound + 1;
 						
