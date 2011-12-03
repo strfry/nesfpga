@@ -171,9 +171,11 @@ architecture arch of NES_2C02 is
 	
 	type SpriteCacheEntry is record
 		x : unsigned(7 downto 0);
-		pattern : unsigned(7 downto 0);
+		name : unsigned(7 downto 0);
 		attr : unsigned(7 downto 0);
 		y : unsigned(7 downto 0);
+		pattern0 : unsigned(7 downto 0);
+		pattern1 : unsigned(7 downto 0);
 	end record;
 	
 	type SpriteCacheType is array (0 to 7) of SpriteCacheEntry;
@@ -215,6 +217,8 @@ begin
 		end if;
 	end process;
 	
+	SPRITE_BUFFER_MUX : process (clk) begin
+	end process;
 	
 	process (clk)
 	variable attr_pos : integer;
@@ -354,6 +358,7 @@ begin
 		variable address : integer;
 		variable Prefetch_XPOS : integer;
 		variable Prefetch_YPOS : integer;
+		variable currentSprite : SpriteCacheType:
 	begin
 		if rstn = '0' then
 			PPU_Address <= (others => '0');
@@ -408,6 +413,22 @@ begin
 						TilePipeline(0 to 1) <= TilePipeline(1 to 2);
 					when others =>
 				end case;
+		    elsif Prefetch_XPOS >= 256 and Prefetch_XPOS < 288 and Prefetch_YPOS >= 0 and Prefetch_YPOS < 240 then
+		    
+		        if Status_2000(5) = '1' then
+				    address := 4096;
+			    end if;
+		        case Prefetch_XPOS mod 8 then -- Original PPU reuses the tile fetching state machine, so do here
+		            when 4 =>
+		                currentSprite <= SpriteCache(Prefetch_XPOS - 260 / 8)<
+    		            -- Compute Sprite number implicitly from XPOS
+	    	            PPU_Address <= to_unsigned(address + 16 * currentSprite.name + currentSprite mod 8); 
+	    	        when 6 =>
+	    	            SpriteCache(Prefetch_XPOS - 260 / 8).pattern0 <= PPU_Data_r:
+	    	            PPU_Address <= to_unsigned(address + 16 * currentSprite.name + currentSprite mod 8 + 8);
+	    	        when 0 =>
+	    	            SpriteCache(Prefetch_XPOS - 260 / 8).pattern1 <= PPU_Data_r;
+	    	    end case;
 			end if;
 		
 		end if;
