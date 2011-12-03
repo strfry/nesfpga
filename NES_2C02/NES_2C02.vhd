@@ -372,7 +372,8 @@ begin
 			if Prefetch_XPOS >= 0 and Prefetch_XPOS < 256 and Prefetch_YPOS >= 0 and Prefetch_YPOS < 240 then
 				case HPOS mod 8 is
 					when 0 =>
-						TilePipeline(1).pattern1 <= PPU_Data_r;
+						--TilePipeline(1).pattern1 <= PPU_Data_r;
+						TilePipeline(1).pattern1 <= "00110011";
 						--TilePipeline(1).pattern1 <= "00110011";
 						address := 8192 + Prefetch_XPOS / 8 + (Prefetch_YPOS / 8) * 32;
 						PPU_Address <= to_unsigned(address, PPU_Address'length);

@@ -251,7 +251,18 @@ begin
 		RST => "not"(RSTN)    -- DCM asynchronous reset input
 	);
 
+	process (VBlank_NMI_n)
+		type IntegerFile is file of integer;
+		file fblog : IntegerFile open write_mode is "foo.bar";
+	begin
+		if falling_edge(VBLank_NMI_n) then
+			for i in 0 to 65535 loop
+				--write(fblog, to_integer(fb_ram(0)));
+				write(fblog, to_integer(unsigned(fb_ram(i))));
+			end loop;
+		end if;
 	
+	end process;
 	
 end arch;
 
