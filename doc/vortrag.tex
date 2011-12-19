@@ -8,12 +8,15 @@
 
 \title{Nintendo Entertainment System}
 \author{Jonathan Sieber}
+\date[09.12.11]{09. Dez 2011}
+
+        \institute{Betreuer: Dipl.-Ing. Benjamin Thielmann}
 
 \begin{document}
     \begin{frame}
         \maketitle
         \begin{center}
-            \includegraphics[height=0.4\textheight]{img/nes.jpg}
+%            \includegraphics[height=0.4\textheight]{img/nes.jpg}
         \end{center}
     \end{frame}
     
@@ -157,7 +160,7 @@
     
     \begin{frame}
         \frametitle{Pattern Table}
-        \includegraphics[width=0.8\linewidth]{img/pattern.png}
+         \includegraphics[height=0.5\linewidth]{img/pattern.png}   
         \begin{itemize}
                 \item{Background-Tiles definieren Palette per 16x16 Pixel}
                 \item{Sprites haben eigene Paletten}
@@ -167,19 +170,41 @@
     
     \begin{frame}
         \frametitle{Background Layer}
-        \includegraphics[width=0.8\linewidth]{img/smb_bg.png}
+        \begin{columns}
+             \column{.45\textwidth}
+                 \includegraphics[width=1.1\textwidth]{img/smb_bg.png}                
+             \column{.55\textwidth}             
+                \begin{itemize}
+                       \item{Lückenloser Hintergrund aus 32x30 Objekten}
+                       \item{Für 16x16 Pixel je eine 4-Farben Palette}
+                        \item{Pipeline mit geschickten Datenformaten braucht 4 Byte-Speicherzugriffe pro 8 Pixel}
+                \end{itemize}
+        \end{columns}
+    \end{frame}
+    
+    \begin{frame}
+        \frametitle{Sprite Layer}
+        \begin{columns}
+             \column{.45\textwidth}
+                 \includegraphics[width=1.1\textwidth]{img/smb_sprite.png}                
+             \column{.55\textwidth}             
+                \begin{itemize}
+                        \item{Frei bewegliche Objekte mit 8x8 oder 8x16 Pixeln}
+                        \item{Bis zu 64 Sprites gleichzeitig}
+                        \item{Werden in der HSYNC-Lücke prefetched, daher nur 8 Sprites pro Zeile}
+                \end{itemize}
+        \end{columns}
     \end{frame}
     
     
     \begin{frame}
-        \frametitle{Sprite Layer}
-        \includegraphics[width=0.8\linewidth]{img/smb_sprite.png}
-    \end{frame}    
+        \frametitle{Hardwareübersicht}
+        \includegraphics[width=0.8\textwidth]{img/system2.pdf}
+    \end{frame}
     
     \begin{frame}
         \frametitle{Hardwareübersicht}
-        \includegraphics<2>[width=0.8\textwidth]{img/system2.pdf}
-        \includegraphics<3>[width=0.8\textwidth]{img/system3.pdf}
+        \includegraphics[width=0.8\textwidth]{img/system3.pdf}
     \end{frame}
     
    

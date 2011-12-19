@@ -184,6 +184,9 @@ architecture arch of NES_2C02 is
 	
 	signal SpritesFound : integer range 0 to 8;
 	signal SpriteCounter : integer range 0 to 64;
+	
+	
+	signal CurrentSpriteColor : unsigned(1 downto 0);
 begin
 
 	CHR_Address <= PPU_Address;
@@ -217,7 +220,19 @@ begin
 		end if;
 	end process;
 	
-	SPRITE_BUFFER_MUX : process (clk) begin
+	SPRITE_BUFFER_MUX : process (clk)
+	variable sprite : SpriteCacheEntry;
+	begin
+	    if rising_edge(clk) and CE = '1' then
+	    
+	        for i in 0 to 7 do
+	            sprite <= SpriteCache(i);
+	            if sprite.x < 8 then
+	                CurrentSpriteColor <= sprite.pattern0(sprite.x) & sprite.pattern1(sprite.x);
+	            end if;
+	            SpriteCache(i).x <= sprite.x - 1;
+	        loop;
+	    end if;
 	end process;
 	
 	process (clk)
