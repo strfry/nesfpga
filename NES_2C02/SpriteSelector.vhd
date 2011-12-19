@@ -22,8 +22,7 @@ entity SpriteSelector is
         SpriteRAMAddress : in std_logic_vector(7 downto 0);
         SpriteRAMData_in : in std_logic_vector(7 downto 0);
         SpriteRAMData_out : out std_logic_vector(7 downto 0);
-        SpriteRAMWriteEnable : in std_logic;
-        
+        SpriteRAMWriteEnable : in std_logic        
         );
 end SpriteSelector;
 
@@ -36,7 +35,7 @@ begin
     variable colorBits : unsigned(1 downto 0);
     begin
         if rising_edge(CLK) and CE = '1' then
-            for i in 7 downto 7 do
+            for i in 7 downto 7 loop
                 if LineBuffer(i).x < 8 then
                     colorBits := LineBuffer(i).pattern0(LineBuffer(i).x) &  LineBuffer(i).pattern1(LineBuffer(i).x);
                     
@@ -45,7 +44,7 @@ begin
                     end if;
                 end if;
                 LineBuffer(i).x <= LineBuffer(i).x - 1;
-            loop;
+            end loop;
         end if;
     end process:
     
@@ -63,8 +62,7 @@ begin
                 SpriteCounter <= 0;
             elsif HPOS > XX then
                 i := HPOS mod 4;
-                ydiff
-                if SpriteRAM(i).y = VPOS 
+                --if SpriteRAM(i).y = VPOS 
             end if;
         end if;
     end process;
@@ -103,5 +101,23 @@ begin
 			end if;
 		end if;
 	end process;
-    
+--	
+--		    elsif Prefetch_XPOS >= 256 and Prefetch_XPOS < 288 and Prefetch_YPOS >= 0 and Prefetch_YPOS < 240 then
+--		    
+--		        if Status_2000(5) = '1' then
+--				    address := 4096;
+--			    end if;
+--		        case Prefetch_XPOS mod 8 then -- Original PPU reuses the tile fetching state machine, so do here
+--		            when 4 =>
+--		                currentSprite <= SpriteCache(Prefetch_XPOS - 260 / 8)<
+--    		            -- Compute Sprite number implicitly from XPOS
+--	    	            PPU_Address <= to_unsigned(address + 16 * currentSprite.name + currentSprite mod 8); 
+--	    	        when 6 =>
+--	    	            SpriteCache(Prefetch_XPOS - 260 / 8).pattern0 <= PPU_Data_r:
+--	    	            PPU_Address <= to_unsigned(address + 16 * currentSprite.name + currentSprite mod 8 + 8);
+--	    	        when 0 =>
+--	    	            SpriteCache(Prefetch_XPOS - 260 / 8).pattern1 <= PPU_Data_r;
+--	    	    end case;
+--			end if;
+--    
 end arch;

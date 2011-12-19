@@ -37,6 +37,29 @@ end NES_2C02;
 
 architecture arch of NES_2C02 is
 
+component SpriteSelector is
+	port  (
+        CLK : in std_logic;
+        CE : in std_logic;
+        RSTN : in std_logic;
+        
+        HPOS : in unsigned(8 downto 0);
+        VPOS : in unsigned(8 downto 0);
+        
+        SpriteColor : out unsigned(3 downto 0);
+        SpritePriority : out std_logic;
+        SpriteOverflow : out std_logic;
+        
+        VRAMAddress : out unsigned(13 downto 0);
+        VRAMData : in std_logic_vector(7 downto 0);
+        
+        SpriteRAMAddress : in std_logic_vector(7 downto 0);
+        SpriteRAMData_in : in std_logic_vector(7 downto 0);
+        SpriteRAMData_out : out std_logic_vector(7 downto 0);
+        SpriteRAMWriteEnable : in std_logic
+        );
+end component;
+
 	signal HSYNC_cnt : integer := 0;
 	signal VSYNC_cnt : integer := 0;
 	signal HPOS : integer;
@@ -73,101 +96,17 @@ architecture arch of NES_2C02 is
 	type VRAMType is array(2047 downto 0) of std_logic_vector(7 downto 0);
 	type PaletteRAMType is array(31 downto 0) of std_logic_vector(5 downto 0);
 	
-	signal VRAMData : VRAMType := (
-		0 => X"00",
-		1 => X"01",
-		2 => X"02",
-		3 => X"03",
-		4 => X"04",
-		5 => X"05",
-		6 => X"06",
-		7 => X"07",
-		8 => X"08",
-		9 => X"09",
-		20 => X"11",
-		21 => X"12",
-		22 => X"13",
-		23 => X"04",
-		24 => X"05",
-		25 => X"06",
-		26 => X"07",
-		27 => X"08",
-		29 => X"09",
-		30 => X"0a",
-		50 => X"0b",
-		51 => X"0c",
-		52 => X"0d",
-		53 => X"0e",
-		54 => X"0f",
-		55 => X"13",
-		56 => X"12",
-		57 => X"11",
-		58 => X"1d",
-		59 => X"1c",
-		100 => X"1b",
-		101 => X"20",
-		102 => X"40",
-		103 => X"50",
-		104 => X"60",
-		105 => X"60",
-		106 => X"60",
-		107 => X"70",
-		108 => X"80",
-		109 => X"a0",
-		others => "00000000"
-	);
-	
-	signal PaletteRAM : PaletteRAMType := (
---		0 =>  "000000",
---		1 =>  "000001",
---		2 =>  "000010",
---		3 =>  "000011",
---		4 =>  "000100",
---		5 =>  "000101",
---		6 =>  "000110",
---		7 =>  "000111",
---		8 =>  "001000",
---		9 =>  "001001",
---		10 => "001010",
---		11 => "001011",
---		12 => "001100",
---		13 => "001101",
---		14 => "001110",
---		15 => "001111",
---		16 => "010000",
---		17 => "010001",
---		18 => "010010",
---		19 => "010011",
---		20 => "010100",
---		21 => "010101",
---		22 => "010110",
---		23 => "010111",
---		24 => "011000",
---		25 => "011001",
---		26 => "011010",
---		27 => "011011",
---		28 => "011100",
---		29 => "011101",
---		30 => "011110",
---		31 => "011111"
-		others => "UUUUUU"
-	);
+	signal VRAMData : VRAMType := (others => "00000000");
+	signal PaletteRAM : PaletteRAMType := (others => "UUUUUU");
 	
 	type SpriteMemDataType is array(255 downto 0) of std_logic_vector(7 downto 0);
 	signal SpriteMemAddress : unsigned(7 downto 0);
 	signal SpriteMemData : SpriteMemDataType := (others => (others => '0'));
 	
-	type BackgroundTile is
-		record
-			attr : std_logic_vector(7 downto 0);
-			pattern0 : std_logic_vector(7 downto 0);
-			pattern1 : std_logic_vector(7 downto 0);
-	end record;
+	signal TilePattern0 : std_logic_vector(15 downto 0);
+	signal TilePattern1 : std_logic_vector(15 downto 0);
+	signal TileAttribute : std_logic_vector(15 downto 0);
 	
-	type BackgroundTilePipelineType is array (0 to 2) of BackgroundTile;
-	
-	signal TilePipeline : BackgroundTilePipelineType;
-	signal BGTileName : unsigned(7 downto 0);
 	
 	type SpriteCacheEntry is record
 		x : unsigned(7 downto 0);
@@ -192,8 +131,9 @@ begin
 	CHR_Address <= PPU_Address;
 	
 	VBlank_n <= VBlankFlag nand Status_2000(7); -- Check on flag and VBlank Enable
+	
 	HPOS <= HSYNC_cnt - 42;
-	VPOS <= VSYNC_cnt - 20;
+	VPOS <= VSYNC_cnt;
 	
 	CE <= '1' when CE_cnt = 0 else '0';
 	
@@ -218,21 +158,6 @@ begin
 				end if;
 			end if;
 		end if;
-	end process;
-	
-	SPRITE_BUFFER_MUX : process (clk)
-	variable sprite : SpriteCacheEntry;
-	begin
-	    if rising_edge(clk) and CE = '1' then
-	    
-	        for i in 0 to 7 do
-	            sprite <= SpriteCache(i);
-	            if sprite.x < 8 then
-	                CurrentSpriteColor <= sprite.pattern0(sprite.x) & sprite.pattern1(sprite.x);
-	            end if;
-	            SpriteCache(i).x <= sprite.x - 1;
-	        loop;
-	    end if;
 	end process;
 	
 	process (clk)
@@ -313,16 +238,17 @@ begin
 			if ChipSelect_n = '1' and ChipSelect_delay = '0' then
 				if ReadWrite = '0' then
 					if Address = "000" then
-						Status_2000 <= Data_in_d;
+						--Status_2000 <= Data_in_d;
+						Status_2000 <= Data_in_d(7 downto 2) & "00";
 					elsif Address = "001" then
 						Status_2001 <= Data_in_d;
 					elsif Address = "011" then
-						SpriteMemAddress <= unsigned(Data_in_d);
+						SpriteRAMAddress <= unsigned(Data_in_d);
 					elsif Address = "100" then
 						SpriteMemData(to_integer(SpriteMemAddress)) <= Data_in_d;
 						SpriteMemAddress <= SpriteMemAddress + 1;
 					elsif Address = "101" then
-						if CPUPortDir = '0' then
+						if CPUPortDir = '1' then
 							if unsigned(Data_in_d) <= 239 then
 								VerticalScrollOffset <= unsigned(Data_in_d);
 							end if;
@@ -357,8 +283,8 @@ begin
 					--Data_out <= (6 => HitSpriteFlag, 7 => VBlankFlag, others => '0');
 					Data_out <= (6 => HitSpriteFlag, 7 => '1', others => '0');
 				elsif Address = "100" then
-					Data_out <= SpriteMemData(to_integer(SpriteMemAddress));
-					SpriteMemAddress <= SpriteMemAddress + 1;
+					Data_out <= SpriteRAMData_out;
+					SpriteRAMAddress <= SpriteRAMAddress + 1;
 				elsif Address = "111" then
 					Data_out <= PPU_Data_r;
 					CPUVRAMRead <= '1';
@@ -370,39 +296,53 @@ begin
 	end process;
 	
 	TILE_PREFETCH : process(clk, rstn)
+		variable NametableBaseAddress : integer;
 		variable address : integer;
 		variable Prefetch_XPOS : integer;
 		variable Prefetch_YPOS : integer;
-		variable currentSprite : SpriteCacheType:
+--		variable currentSprite : SpriteCacheType:
 	begin
 		if rstn = '0' then
 			PPU_Address <= (others => '0');
-		elsif rising_edge(clk) and CE = '1' then
-			address := 0;
-			
-			Prefetch_XPOS := HPOS + 16;
+		elsif rising_edge(clk) and CE = '1' then			
+			Prefetch_XPOS := (HPOS + 16 + to_integer(HorizontalScrollOffset)) mod 256;
 			if HPOS > 240 then
 				Prefetch_YPOS := (VPOS + 1);
 			else 
 				Prefetch_YPOS := VPOS;
 			end if;
 			
+			Prefetch_YPOS := (Prefetch_YPOS + to_integer(VerticalScrollOffset)) mod 256;
+			
+			NametableBaseAddress := 8192;
+			-- Select right-hand nametable when it is selected, or when scrolled in, and mirror back to the left when both is the case
+			if Prefetch_XPOS + HorizontalScrollOffset >= 256 xor Status_2000(0) = '1' then
+				NametableBaseAddress := NametableBaseAddress + 1024;
+			end if;
+			
+			-- Same thing for vertical scroll
+			if Prefetch_YPOS + VerticalScrollOffset >= 256 xor Status_2000(1) = '1' then
+				NametableBaseAddress := NametableBaseAddress + 2048;
+			end if;
+			
+			address := 0;
+			
 			--PPU_Address <= (others => '0');
 			
-			if Prefetch_XPOS >= 0 and Prefetch_XPOS < 256 and Prefetch_YPOS >= 0 and Prefetch_YPOS < 240 then
+			if HPOS >= -15 and HPOS < 240 and VPOS >= -1 and VPOS < 240 then
 				case HPOS mod 8 is
 					when 0 =>
 						--TilePipeline(1).pattern1 <= PPU_Data_r;
 						TilePipeline(1).pattern1 <= "00110011";
 						--TilePipeline(1).pattern1 <= "00110011";
-						address := 8192 + Prefetch_XPOS / 8 + (Prefetch_YPOS / 8) * 32;
+						address := NametableBaseAddress + Prefetch_XPOS / 8 + (Prefetch_YPOS / 8) * 32;
 						PPU_Address <= to_unsigned(address, PPU_Address'length);
 					when 1 =>
 					when 2 =>
 						BGTileName <= unsigned(PPU_Data_r);
 						--BGTileName <= X"24";
 						--BGTileName <= to_unsigned(8192 + HPOS / 8 + VPOS / 8 * 32, 8);
-						address :=  9152 + (Prefetch_XPOS - 2) / 32 + (Prefetch_YPOS / 32) * 8;
+						address :=  NametableBaseAddress + 960 + (Prefetch_XPOS - 2) / 32 + (Prefetch_YPOS / 32) * 8;
 						PPU_Address <= to_unsigned(address, PPU_Address'length);
 					when 3 =>
 					when 4 =>
@@ -428,22 +368,6 @@ begin
 						TilePipeline(0 to 1) <= TilePipeline(1 to 2);
 					when others =>
 				end case;
-		    elsif Prefetch_XPOS >= 256 and Prefetch_XPOS < 288 and Prefetch_YPOS >= 0 and Prefetch_YPOS < 240 then
-		    
-		        if Status_2000(5) = '1' then
-				    address := 4096;
-			    end if;
-		        case Prefetch_XPOS mod 8 then -- Original PPU reuses the tile fetching state machine, so do here
-		            when 4 =>
-		                currentSprite <= SpriteCache(Prefetch_XPOS - 260 / 8)<
-    		            -- Compute Sprite number implicitly from XPOS
-	    	            PPU_Address <= to_unsigned(address + 16 * currentSprite.name + currentSprite mod 8); 
-	    	        when 6 =>
-	    	            SpriteCache(Prefetch_XPOS - 260 / 8).pattern0 <= PPU_Data_r:
-	    	            PPU_Address <= to_unsigned(address + 16 * currentSprite.name + currentSprite mod 8 + 8);
-	    	        when 0 =>
-	    	            SpriteCache(Prefetch_XPOS - 260 / 8).pattern1 <= PPU_Data_r;
-	    	    end case;
 			end if;
 		
 		end if;
@@ -532,5 +456,26 @@ begin
 			end if;
 		end if;
 	end process;
+	
+	SPRITE_SEL : SpriteSelector
+	port map (
+		CLK => CLK,
+		CE => CE,
+		RSTN => RSTN,
+		
+		HPOS => HPOS,
+		VPOS => VPOS,
+		
+		SpriteColor => SpriteColor,
+		SpriteOverflow => SpriteOverflow,
+		
+		VRAMAddress => SpriteVRAMAddress,
+		VRAMData => SpriteVRAMData,
+		
+		SpriteRAMAddress => SpriteRAMAddress,
+		SpriteRAMData_in => SpriteRAMData_in,
+		SpriteRAMData_out => SpriteRAMData_out,
+		SpriteRAMWriteEnable => SpriteRAMWriteEnable
+        );
 
 end arch;
