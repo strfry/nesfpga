@@ -12,7 +12,7 @@ entity SpriteSelector is
         HPOS : in unsigned(8 downto 0);
         VPOS : in unsigned(8 downto 0);
         
-        SpriteColor : out unsigned(3 downto 0);
+        SpriteColor : out std_logic_vector(3 downto 0);
         SpritePriority : out std_logic;
         SpriteOverflow : out std_logic;
         
@@ -28,79 +28,89 @@ end SpriteSelector;
 
 
 architecture arch of SpriteSelector is
-    
+	
+	type SpriteLineEntry is record
+		x : unsigned(7 downto 0);
+		pattern0 : unsigned(7 downto 0);
+		pattern1 : unsigned(7 downto 0);
+		attr : unsigned(7 downto 0);
+	end record;
+	
+	type LineBufferType is array(7 downto 0) of SpriteLineEntry;
+	signal LineBuffer : LineBufferType;
    
 begin
     PIXEL_MUX : process (CLK)
     variable colorBits : unsigned(1 downto 0);
     begin
         if rising_edge(CLK) and CE = '1' then
-            for i in 7 downto 7 loop
+            for i in 7 downto 0 loop
                 if LineBuffer(i).x < 8 then
-                    colorBits := LineBuffer(i).pattern0(LineBuffer(i).x) &  LineBuffer(i).pattern1(LineBuffer(i).x);
+                    --colorBits := LineBuffer(i).pattern0(LineBuffer(i).x(3 downto 0)) &  LineBuffer(i).pattern1(LineBuffer(i).x(3 downto 0));
+						  colorBits := "00";
                     
-                    if colorBits <> "00" then
-                        SpriteColor <= LineBuffer(i).attr & colorBits;
+                    if colorBits /= "00" then
+                        SpriteColor <= std_logic_vector(LineBuffer(i).attr & colorBits);
                     end if;
                 end if;
                 LineBuffer(i).x <= LineBuffer(i).x - 1;
             end loop;
         end if;
-    end process:
+    end process;
     
-    PATTERN_FETCH : process (CLK)
-    begin
-    end process:
+--    PATTERN_FETCH : process (CLK)
+--    begin
+--    end process:
 
     LOOKUP : process (CLK)
     variable i, ydiff : integer;
-    variable currentSprite;
+    --variable currentSprite;
     begin
         if rising_edge(CLK) and CE = '1' then
-            if HPOS = XX then
+            if HPOS = 0 then
                 LineBuffer <= (others => (others => (others => '0')));
-                SpriteCounter <= 0;
-            elsif HPOS > XX then
-                i := HPOS mod 4;
+--                SpriteCounter <= 0;
+--            elsif HPOS > XX then
+--                i := HPOS mod 4;
                 --if SpriteRAM(i).y = VPOS 
             end if;
         end if;
     end process;
     
-    	SPRITE_LOOKUP : process (clk, rstn)
-	variable currentSprite : SpriteCacheEntry;
-	begin
-		if rstn = '0' then
-			--SpriteCache <= (others => (others => (others => '0')));
-			SpriteCounter <= 0;
-		elsif rising_edge(clk) and CE = '1' then
-			if VPOS = 0 and HPOS = 0 then
-				HitSpriteFlag <= '0';
-			end if;
-			if HPOS = -1 then
-				SpriteCounter <= 0;
-				SpritesFound <= 0;
-			elsif SpriteCounter < 64 and HPOS >= 0 and HPOS < 256 and VPOS >= 0 and VPOS < 240 then
-				if HPOS mod 2 = 0 then
-					currentSprite.y := unsigned(SpriteMemData(SpriteCounter * 4));
-					currentSprite.x := unsigned(SpriteMemData(SpriteCounter * 4 + 1));
-					currentSprite.pattern := unsigned(SpriteMemData(SpriteCounter * 4 + 2));
-					currentSprite.attr := unsigned(SpriteMemData(SpriteCounter * 4 + 3));
-				else
-					if currentSprite.y - VPOS < 8 and currentSprite.y - VPOS > 0 and SpritesFound < 8 then
-						SpriteCache(SpritesFound) <= currentSprite;
-						
-						SpritesFound <= SpritesFound + 1;
-						
-						if SpriteCounter = 0 then
-							HitSpriteFlag <= '1';
-						end if;
-					end if;
-					SpriteCounter <= SpriteCounter + 1;
-				end if;
-			end if;
-		end if;
-	end process;
+--    	SPRITE_LOOKUP : process (clk, rstn)
+--	variable currentSprite : SpriteCacheEntry;
+--	begin
+--		if rstn = '0' then
+--			--SpriteCache <= (others => (others => (others => '0')));
+--			SpriteCounter <= 0;
+--		elsif rising_edge(clk) and CE = '1' then
+--			if VPOS = 0 and HPOS = 0 then
+--				HitSpriteFlag <= '0';
+--			end if;
+--			if HPOS = -1 then
+--				SpriteCounter <= 0;
+--				SpritesFound <= 0;
+--			elsif SpriteCounter < 64 and HPOS >= 0 and HPOS < 256 and VPOS >= 0 and VPOS < 240 then
+--				if HPOS mod 2 = 0 then
+--					currentSprite.y := unsigned(SpriteMemData(SpriteCounter * 4));
+--					currentSprite.x := unsigned(SpriteMemData(SpriteCounter * 4 + 1));
+--					currentSprite.pattern := unsigned(SpriteMemData(SpriteCounter * 4 + 2));
+--					currentSprite.attr := unsigned(SpriteMemData(SpriteCounter * 4 + 3));
+--				else
+--					if currentSprite.y - VPOS < 8 and currentSprite.y - VPOS > 0 and SpritesFound < 8 then
+--						SpriteCache(SpritesFound) <= currentSprite;
+--						
+--						SpritesFound <= SpritesFound + 1;
+--						
+--						if SpriteCounter = 0 then
+--							HitSpriteFlag <= '1';
+--						end if;
+--					end if;
+--					SpriteCounter <= SpriteCounter + 1;
+--				end if;
+--			end if;
+--		end if;
+--	end process;
 --	
 --		    elsif Prefetch_XPOS >= 256 and Prefetch_XPOS < 288 and Prefetch_YPOS >= 0 and Prefetch_YPOS < 240 then
 --		    

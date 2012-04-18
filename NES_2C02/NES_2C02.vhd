@@ -46,7 +46,7 @@ component SpriteSelector is
         HPOS : in unsigned(8 downto 0);
         VPOS : in unsigned(8 downto 0);
         
-        SpriteColor : out unsigned(3 downto 0);
+        SpriteColor : out std_logic_vector(3 downto 0);
         SpritePriority : out std_logic;
         SpriteOverflow : out std_logic;
         
@@ -60,10 +60,30 @@ component SpriteSelector is
         );
 end component;
 
+component TileFetcher is
+	port	(
+        CLK : in std_logic;
+        CE : in std_logic;
+        RSTN : in std_logic;
+        
+        HPOS : in unsigned(8 downto 0);
+        VPOS : in unsigned(8 downto 0);
+        
+        TileColor : out unsigned(3 downto 0);
+        
+        VRAMAddress : out unsigned(13 downto 0);
+        VRAMData : in std_logic_vector(7 downto 0)
+		  
+        );
+end component;
+
 	signal HSYNC_cnt : integer := 0;
 	signal VSYNC_cnt : integer := 0;
 	signal HPOS : integer;
 	signal VPOS : integer;
+	
+	signal HPOS_u : unsigned(8 downto 0);
+	signal VPOS_u : unsigned(8 downto 0);
 	
 	signal CE_cnt : unsigned(1 downto 0) := "00";
 	signal CE : std_logic;
@@ -103,6 +123,11 @@ end component;
 	signal SpriteMemAddress : unsigned(7 downto 0);
 	signal SpriteMemData : SpriteMemDataType := (others => (others => '0'));
 	
+	signal SpriteRAMAddress : std_logic_vector(7 downto 0);
+	signal SpriteRAMData_in : std_logic_vector(7 downto 0);
+	signal SpriteRAMData_out : std_logic_vector(7 downto 0);
+	signal SpriteRAMWriteEnable : std_logic;
+	
 	signal TilePattern0 : std_logic_vector(15 downto 0);
 	signal TilePattern1 : std_logic_vector(15 downto 0);
 	signal TileAttribute : std_logic_vector(15 downto 0);
@@ -125,7 +150,12 @@ end component;
 	signal SpriteCounter : integer range 0 to 64;
 	
 	
-	signal CurrentSpriteColor : unsigned(1 downto 0);
+	signal SpriteColor : std_logic_vector(3 downto 0);
+	signal SpriteOverflow : std_logic;
+	signal BGTileName : unsigned(7 downto 0);
+	
+	signal TileColor : unsigned(3 downto 0);
+	signal TileVRAMAddress : unsigned(13 downto 0);
 begin
 
 	CHR_Address <= PPU_Address;
@@ -134,6 +164,9 @@ begin
 	
 	HPOS <= HSYNC_cnt - 42;
 	VPOS <= VSYNC_cnt;
+	
+	HPOS_u <= to_unsigned(HPOS, 9);
+	VPOS_u <= to_unsigned(VPOS, 9);
 	
 	CE <= '1' when CE_cnt = 0 else '0';
 	
@@ -171,10 +204,10 @@ begin
 				FB_Address <= std_logic_vector(to_unsigned(VPOS * 256 + HPOS, FB_Address'length));
 				
 				attr_pos := ((VPOS mod 32) / 16) * 4 + (HPOS mod 32) / 16 * 2;
-				attr_color := unsigned(TilePipeline(0).attr(attr_pos + 1 downto attr_pos));
+				attr_color := unsigned(TileAttribute(attr_pos + 1 downto attr_pos));
 				
 				--attr_color := unsigned(TilePipeline(0).attr(1 downto 0));
-				bg_color := attr_color & TilePipeline(0).pattern1(7 - HPOS mod 8) & TilePipeline(0).pattern0(7 - HPOS mod 8);
+				bg_color := attr_color & TilePattern1(7 - HPOS mod 8) & TilePattern0(7 - HPOS mod 8);
 				
 				--FB_Color <= std_logic_vector(to_unsigned(HPOS / 16, FB_Color'length));
 				FB_Color <= std_logic_vector(PaletteRAM(to_integer(bg_color)));
@@ -183,6 +216,8 @@ begin
 				--FB_Color <= std_logic_vector(to_unsigned(attr_pos, 6));
 				
 				--FB_Color <= "00" & TilePipeline(0).pattern1(HPOS mod 8) & TilePipeline(0).pattern0(HPOS mod 8) & "00";
+				
+				FB_Color <= std_logic_vector(PaletteRAM(to_integer(TileColor)));
 				
 				if SpritesFound > 0 then
 					if SpriteCache(0).x - HPOS < 8 then FB_Color <= "101111"; end if;
@@ -243,7 +278,7 @@ begin
 					elsif Address = "001" then
 						Status_2001 <= Data_in_d;
 					elsif Address = "011" then
-						SpriteRAMAddress <= unsigned(Data_in_d);
+						SpriteMemAddress <= unsigned(Data_in_d);
 					elsif Address = "100" then
 						SpriteMemData(to_integer(SpriteMemAddress)) <= Data_in_d;
 						SpriteMemAddress <= SpriteMemAddress + 1;
@@ -284,7 +319,7 @@ begin
 					Data_out <= (6 => HitSpriteFlag, 7 => '1', others => '0');
 				elsif Address = "100" then
 					Data_out <= SpriteRAMData_out;
-					SpriteRAMAddress <= SpriteRAMAddress + 1;
+					SpriteRAMAddress <= std_logic_vector(unsigned(SpriteRAMAddress) + 1);
 				elsif Address = "111" then
 					Data_out <= PPU_Data_r;
 					CPUVRAMRead <= '1';
@@ -292,84 +327,6 @@ begin
 					Data_out <= (others => 'X'); -- This should be a write only register
 				end if;
 			end if;
-		end if;
-	end process;
-	
-	TILE_PREFETCH : process(clk, rstn)
-		variable NametableBaseAddress : integer;
-		variable address : integer;
-		variable Prefetch_XPOS : integer;
-		variable Prefetch_YPOS : integer;
---		variable currentSprite : SpriteCacheType:
-	begin
-		if rstn = '0' then
-			PPU_Address <= (others => '0');
-		elsif rising_edge(clk) and CE = '1' then			
-			Prefetch_XPOS := (HPOS + 16 + to_integer(HorizontalScrollOffset)) mod 256;
-			if HPOS > 240 then
-				Prefetch_YPOS := (VPOS + 1);
-			else 
-				Prefetch_YPOS := VPOS;
-			end if;
-			
-			Prefetch_YPOS := (Prefetch_YPOS + to_integer(VerticalScrollOffset)) mod 256;
-			
-			NametableBaseAddress := 8192;
-			-- Select right-hand nametable when it is selected, or when scrolled in, and mirror back to the left when both is the case
-			if Prefetch_XPOS + HorizontalScrollOffset >= 256 xor Status_2000(0) = '1' then
-				NametableBaseAddress := NametableBaseAddress + 1024;
-			end if;
-			
-			-- Same thing for vertical scroll
-			if Prefetch_YPOS + VerticalScrollOffset >= 256 xor Status_2000(1) = '1' then
-				NametableBaseAddress := NametableBaseAddress + 2048;
-			end if;
-			
-			address := 0;
-			
-			--PPU_Address <= (others => '0');
-			
-			if HPOS >= -15 and HPOS < 240 and VPOS >= -1 and VPOS < 240 then
-				case HPOS mod 8 is
-					when 0 =>
-						--TilePipeline(1).pattern1 <= PPU_Data_r;
-						TilePipeline(1).pattern1 <= "00110011";
-						--TilePipeline(1).pattern1 <= "00110011";
-						address := NametableBaseAddress + Prefetch_XPOS / 8 + (Prefetch_YPOS / 8) * 32;
-						PPU_Address <= to_unsigned(address, PPU_Address'length);
-					when 1 =>
-					when 2 =>
-						BGTileName <= unsigned(PPU_Data_r);
-						--BGTileName <= X"24";
-						--BGTileName <= to_unsigned(8192 + HPOS / 8 + VPOS / 8 * 32, 8);
-						address :=  NametableBaseAddress + 960 + (Prefetch_XPOS - 2) / 32 + (Prefetch_YPOS / 32) * 8;
-						PPU_Address <= to_unsigned(address, PPU_Address'length);
-					when 3 =>
-					when 4 =>
-						TilePipeline(2).attr <= PPU_Data_r;
-						if Status_2000(4) = '1' then
-							address := 4096;
-						end if;
-						
-						address := address + to_integer(BGTileName * 16 + (Prefetch_YPOS mod 8));
-						PPU_Address <=  to_unsigned(address, PPU_Address'length);
-					when 5 =>
-					when 6 =>
-						TilePipeline(2).pattern0 <= PPU_Data_r;
-						--TilePipeline(2).pattern0 <= "00001111";
-						if Status_2000(4) = '1' then
-							address := 4096;
-						end if;
-						
-						address := address + to_integer(BGTileName * 16 + (Prefetch_YPOS mod 8) + 8);
-						PPU_Address <=  to_unsigned(address, PPU_Address'length);
-						
-					when 7 =>
-						TilePipeline(0 to 1) <= TilePipeline(1 to 2);
-					when others =>
-				end case;
-			end if;
-		
 		end if;
 	end process;
 	
@@ -386,7 +343,8 @@ begin
 				InternalAddress := CPUVRAMAddress;
 			else
 				InternalRW := '1';
-				InternalAddress := PPU_Address;
+				--InternalAddress := PPU_Address;
+				InternalAddress := TileVRAMAddress;
 			end if;
 			
 			-- The 2C02 addresses the PPU memory bus with an 8 bit port
@@ -421,41 +379,41 @@ begin
 			end if;
 		end if;
 	end process;
-	
-	SPRITE_LOOKUP : process (clk, rstn)
-	variable currentSprite : SpriteCacheEntry;
-	begin
-		if rstn = '0' then
-			--SpriteCache <= (others => (others => (others => '0')));
-			SpriteCounter <= 0;
-		elsif rising_edge(clk) and CE = '1' then
-			if VPOS = 0 and HPOS = 0 then
-				HitSpriteFlag <= '0';
-			end if;
-			if HPOS = -1 then
-				SpriteCounter <= 0;
-				SpritesFound <= 0;
-			elsif SpriteCounter < 64 and HPOS >= 0 and HPOS < 256 and VPOS >= 0 and VPOS < 240 then
-				if HPOS mod 2 = 0 then
-					currentSprite.y := unsigned(SpriteMemData(SpriteCounter * 4));
-					currentSprite.x := unsigned(SpriteMemData(SpriteCounter * 4 + 1));
-					currentSprite.pattern := unsigned(SpriteMemData(SpriteCounter * 4 + 2));
-					currentSprite.attr := unsigned(SpriteMemData(SpriteCounter * 4 + 3));
-				else
-					if currentSprite.y - VPOS < 8 and currentSprite.y - VPOS > 0 and SpritesFound < 8 then
-						SpriteCache(SpritesFound) <= currentSprite;
-						
-						SpritesFound <= SpritesFound + 1;
-						
-						if SpriteCounter = 0 then
-							HitSpriteFlag <= '1';
-						end if;
-					end if;
-					SpriteCounter <= SpriteCounter + 1;
-				end if;
-			end if;
-		end if;
-	end process;
+--	
+--	SPRITE_LOOKUP : process (clk, rstn)
+--	variable currentSprite : SpriteCacheEntry;
+--	begin
+--		if rstn = '0' then
+--			--SpriteCache <= (others => (others => (others => '0')));
+--			SpriteCounter <= 0;
+--		elsif rising_edge(clk) and CE = '1' then
+--			if VPOS = 0 and HPOS = 0 then
+--				HitSpriteFlag <= '0';
+--			end if;
+--			if HPOS = -1 then
+--				SpriteCounter <= 0;
+--				SpritesFound <= 0;
+--			elsif SpriteCounter < 64 and HPOS >= 0 and HPOS < 256 and VPOS >= 0 and VPOS < 240 then
+--				if HPOS mod 2 = 0 then
+--					currentSprite.y := unsigned(SpriteMemData(SpriteCounter * 4));
+--					currentSprite.x := unsigned(SpriteMemData(SpriteCounter * 4 + 1));
+--					currentSprite.pattern := unsigned(SpriteMemData(SpriteCounter * 4 + 2));
+--					currentSprite.attr := unsigned(SpriteMemData(SpriteCounter * 4 + 3));
+--				else
+--					if currentSprite.y - VPOS < 8 and currentSprite.y - VPOS > 0 and SpritesFound < 8 then
+--						SpriteCache(SpritesFound) <= currentSprite;
+--						
+--						SpritesFound <= SpritesFound + 1;
+--						
+--						if SpriteCounter = 0 then
+--							HitSpriteFlag <= '1';
+--						end if;
+--					end if;
+--					SpriteCounter <= SpriteCounter + 1;
+--				end if;
+--			end if;
+--		end if;
+--	end process;
 	
 	SPRITE_SEL : SpriteSelector
 	port map (
@@ -463,19 +421,34 @@ begin
 		CE => CE,
 		RSTN => RSTN,
 		
-		HPOS => HPOS,
-		VPOS => VPOS,
+		HPOS => HPOS_u,
+		VPOS => VPOS_u,
 		
 		SpriteColor => SpriteColor,
 		SpriteOverflow => SpriteOverflow,
 		
-		VRAMAddress => SpriteVRAMAddress,
-		VRAMData => SpriteVRAMData,
+--		VRAMAddress => VRAMAddress,
+		VRAMData => PPU_Data_r,
 		
 		SpriteRAMAddress => SpriteRAMAddress,
 		SpriteRAMData_in => SpriteRAMData_in,
 		SpriteRAMData_out => SpriteRAMData_out,
 		SpriteRAMWriteEnable => SpriteRAMWriteEnable
         );
+		  
+	TILE_FETCHER : TileFetcher
+	port map (
+		CLK => CLK,
+		CE => CE,
+		RSTN => RSTN,
+		
+		HPOS => HPOS_u,
+		VPOS => VPOS_u,
+		
+      TileColor => TileColor,
+		
+		VRAMAddress => TileVRAMAddress,
+		VRAMData => PPU_Data_r
+	);
 
 end arch;
