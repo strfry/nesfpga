@@ -37,8 +37,15 @@
  #NET "Led<5>"  LOC = "AG11"; # Bank = 22, Pin name = IO_L19N_22,     Sch name = LD5
  #NET "Led<6>"  LOC = "AF11"; # Bank = 22, Pin name = IO_L16P_22,     Sch name = LD6
  #NET "Led<7>"  LOC = "AE11"; # Bank = 22, Pin name = IO_L16N_22,     Sch name = LD7
- #NET "BTN<0>"	LOC = "G6";
- #NET "BTN<1>"  LOC = "G7";
+ 
+ NET "BTN<0>" LOC = "G6";  # Bank = 12, Pin name = IO_L17P_12,        Sch name = BTN0
+ NET "BTN<1>" LOC = "G7";  # Bank = 12, Pin name = IO_L17N_12,        Sch name = BTN1
+ NET "BTN<2>" LOC = "E6";  # Bank = 12, Pin name = IO_L19P_12,        Sch name = BTNU
+ NET "BTN<3>" LOC = "J17"; # Bank = 3,  Pin name = IO_L4N_GC_VREF_3,  Sch name = BTNR
+ NET "BTN<4>" LOC = "H15"; # Bank = 3,  Pin name = IO_L6N_GC_3,       Sch name = BTND
+ NET "BTN<5>" LOC = "K19"; # Bank = 3,  Pin name = IO_L5N_GC_3,       Sch name = BTNL
+ NET "BTN<6>" LOC = "J21"; # Bank = 3,  Pin name = IO_L7N_GC_3,       Sch name = BTNS
+ 
 #Created by Constraints Editor (xc5vlx50t-ff1136-2) - 2011/11/11
 NET "CLK" TNM_NET = CLK;
 TIMESPEC TS_CLK = PERIOD "CLK" 10 ns HIGH 50%;

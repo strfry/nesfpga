@@ -38,24 +38,19 @@ begin
 	HorizontalScrollOffset <= "00000000";
 	Status_2000 <= "00000000";
 	
-	process (clk)
+	process (VPOS, HPOS, TilePattern0, TilePattern1, TileAttribute)
 	variable attr_pos : integer;
 	variable attr_color : unsigned(1 downto 0);
 	variable bg_color : unsigned(3 downto 0);
 	begin
-		if rising_edge(clk) and CE = '1' then
-			if HPOS >= 0 and HPOS < 256 and VPOS >= 0 and VPOS < 240 then
-				attr_pos := to_integer(((VPOS mod 32) / 16) * 4 + (HPOS mod 32) / 16 * 2);
-				attr_color := unsigned(TileAttribute(attr_pos + 1 downto attr_pos));
-				
-				--attr_color := unsigned(TilePipeline(0).attr(1 downto 0));
-				TileColor <= attr_color & TilePattern1(7 - to_integer(HPOS) mod 8) & TilePattern0(7 - to_integer(HPOS) mod 8);
-				
-				if VPOS >= 210 then
-					TileColor <= (HPOS / 8);
-				end if;
-				
-			end if;
+		attr_pos := to_integer(((VPOS mod 32) / 16) * 4 + (HPOS mod 32) / 16 * 2);
+		attr_color := unsigned(TileAttribute(attr_pos + 1 downto attr_pos));
+		
+		--attr_color := unsigned(TilePipeline(0).attr(1 downto 0));
+		TileColor <= attr_color & TilePattern1(15 - to_integer(HPOS) mod 8) & TilePattern0(15 - to_integer(HPOS) mod 8);
+		
+		if VPOS >= 210 then
+			TileColor <= (HPOS / 8);
 		end if;
 	end process;
 
@@ -124,7 +119,6 @@ begin
 					when 5 =>
 					when 6 =>
 						NextTilePattern0 := VRAMData;
-						NextTilePattern0 := "00001111";
 						if Status_2000(4) = '1' then
 							address := 4096;
 						end if;
@@ -133,9 +127,12 @@ begin
 						VRAMAddress <=  to_unsigned(address, VRAMAddress'length);
 						
 					when 7 =>
-						TilePattern0 <= TilePattern0(7 downto 0) & NextTilePattern0;
-						TilePattern1 <= TilePattern1(7 downto 0) & VRAMData;
-						TileAttribute <= TileAttribute(7 downto 0) & NextTileAttribute;
+						-- TilePattern0 <= NextTilePattern0 & TilePattern0(15 downto 8);
+						-- TilePattern1 <= VRAMData & TilePattern1(15 downto 8);
+						
+						TilePattern0 <= "0011001100110011";
+						TilePattern1 <= "0000111100001111";
+						TileAttribute <= NextTileAttribute & TileAttribute(15 downto 8);
 					when others =>
 				end case;
 			end if;
