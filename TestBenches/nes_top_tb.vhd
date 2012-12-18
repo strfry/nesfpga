@@ -24,9 +24,9 @@ ARCHITECTURE behavior OF nes_top_tb IS
          HDMID : OUT  std_logic_vector(11 downto 0);
          HDMISCL : INOUT  std_logic;
          HDMISDA : INOUT  std_logic;
-         HDMIRSTN : OUT  std_logic
+         HDMIRSTN : OUT  std_logic;
 --         LED : OUT  std_logic_vector(0 to 7);
---         BTN : IN  std_logic_vector(0 to 1)
+         BTN : IN  std_logic_vector(0 to 6)
         );
     END COMPONENT;
     
@@ -34,7 +34,7 @@ ARCHITECTURE behavior OF nes_top_tb IS
    --Inputs
    signal CLK : std_logic := '0';
    signal RSTN : std_logic := '0';
-   signal BTN : std_logic_vector(0 to 1) := (others => '0');
+   signal BTN : std_logic_vector(0 to 6) := (others => '0');
 
 	--BiDirs
    signal HDMISCL : std_logic;
@@ -67,9 +67,9 @@ BEGIN
           HDMID => HDMID,
           HDMISCL => HDMISCL,
           HDMISDA => HDMISDA,
-          HDMIRSTN => HDMIRSTN
+          HDMIRSTN => HDMIRSTN,
 --          LED => LED,
---          BTN => BTN
+          BTN => BTN
         );
 
    -- Clock process definitions

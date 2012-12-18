@@ -8,7 +8,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-
+use STD.textio.all;
 
 Library UNISIM;
 use UNISIM.vcomponents.all;
@@ -84,6 +84,7 @@ architecture arch of nes_top is
 	--type fb_ram_type is array(0 to 256 * 224) of std_logic_vector(5 downto 0);
 
 	type fb_ram_type is array(65535 downto 0) of std_logic_vector(5 downto 0);
+  type FramebufferFileType is file of fb_ram_type;
 
 	signal fb_ram : fb_ram_type := (others => "101010");
 
@@ -93,7 +94,7 @@ begin
 
 	 CPU_PPU_CS_n <= '0' when CPU_Address(15 downto 3) = "0010000000000" and CPU_PHI2 = '1' else '1';
 	 
-	 --CPU_PRG_CS_n <= '0' when CPU_Address(15) = '1' and CPU_PHI2 = '1' else '1';
+	 CPU_PRG_CS_n <= '0' when CPU_Address(15) = '1' and CPU_PHI2 = '1' else '1';
 	 
 --	 CONTROLLER_REGISTER : process (CPU_PHI2)
 --	 begin
@@ -296,6 +297,20 @@ begin
 		CLKIN => CLK,         -- Clock input (from IBUFG, BUFG or DCM)
 		RST => "not"(RSTN)    -- DCM asynchronous reset input
 	);
+	
+	FB_DUMP: process (VBlank_NMI_n)
+      file my_output : FramebufferFileType open WRITE_MODE is "fbdump_top.out";
+      -- above declaration should be in architecture declarations for multiple
+      variable my_line : LINE;
+      variable my_output_line : LINE;
+    begin
+      if falling_edge(VBlank_NMI_n) then
+        write(my_line, string'("writing file"));
+        writeline(output, my_line);
+        write(my_output, fb_ram);
+--        writeline(my_output, my_output_line);
+      end if;
+    end process;
 
 
 	
