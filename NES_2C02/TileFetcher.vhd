@@ -10,8 +10,8 @@ port  (
 		CE : in std_logic;
 		RSTN : in std_logic;
 
-		HPOS : in unsigned(8 downto 0);
-		VPOS : in unsigned(8 downto 0);
+		HPOS : in integer;
+		VPOS : in integer;
 
 		VRAM_Address: out unsigned(13 downto 0);
 		VRAM_Data : in std_logic_vector(7 downto 0);
@@ -42,14 +42,14 @@ begin
 	variable attr_color : unsigned(1 downto 0);
 	variable bg_color : unsigned(3 downto 0);
 	begin
-		attr_pos := to_integer(((VPOS mod 32) / 16) * 4 + (HPOS mod 32) / 16 * 2);
+		attr_pos := ((VPOS mod 32) / 16) * 4 + (HPOS mod 32) / 16 * 2;
 		attr_color := unsigned(TileAttribute(attr_pos + 1 downto attr_pos));
 		
 		--attr_color := unsigned(TilePipeline(0).attr(1 downto 0));
-		TileColor <= attr_color & TilePattern1(15 - to_integer(HPOS) mod 8) & TilePattern0(15 - to_integer(HPOS) mod 8);
+		TileColor <= attr_color & TilePattern1(15 - HPOS mod 8) & TilePattern0(15 - HPOS mod 8);
 		
 		if VPOS >= 210 then
-			TileColor <= (HPOS / 8);
+			TileColor <= to_unsigned((HPOS / 8) mod 16, 4);
 		end if;
 	end process;
 
@@ -66,11 +66,11 @@ begin
 		if rstn = '0' then
 			VRAM_Address <= (others => '0');
 		elsif rising_edge(clk) and CE = '1' then			
-			Prefetch_XPOS := (to_integer(HPOS) + 16 + to_integer(HorizontalScrollOffset)) mod 256;
+			Prefetch_XPOS := (HPOS + 16 + to_integer(HorizontalScrollOffset)) mod 256;
 			if HPOS > 240 then
-				Prefetch_YPOS := to_integer(VPOS + 1);
+				Prefetch_YPOS := VPOS + 1;
 			else 
-				Prefetch_YPOS := to_integer(VPOS);
+				Prefetch_YPOS := VPOS;
 			end if;
 			
 			Prefetch_YPOS := (Prefetch_YPOS + to_integer(VerticalScrollOffset)) mod 256;
@@ -92,7 +92,7 @@ begin
 			
 --			if HPOS >= -15 and HPOS < 240 and VPOS >= -1 and VPOS < 240 then
 			if HPOS < 240 and VPOS < 240 then
-				case to_integer(HPOS) mod 8 is
+				case HPOS mod 8 is
 					when 0 =>
 						--TilePipeline(1).pattern1 <= PPU_Data_r;
 						--TilePipeline(1).pattern1 <= "00110011";
@@ -127,7 +127,7 @@ begin
 						
 					when 7 =>
 						TilePattern0 <= NextTilePattern0 & TilePattern0(15 downto 8);
-						TilePattern1 <= VRAMData & TilePattern1(15 downto 8);
+						TilePattern1 <= VRAM_Data & TilePattern1(15 downto 8);
 						
 						--TilePattern0 <= "0011001100110011";
 						--TilePattern1 <= "0000111100001111";

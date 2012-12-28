@@ -66,8 +66,8 @@ port (
 		CE : in std_logic;
 		RSTN : in std_logic;
 
-		HPOS : in unsigned(8 downto 0);
-		VPOS : in unsigned(8 downto 0);
+		HPOS : in integer;
+		VPOS : in integer;
 
 		VRAM_Address : out unsigned(13 downto 0);
 		VRAM_Data : in std_logic_vector(7 downto 0);
@@ -102,8 +102,8 @@ end component;
 	
 	signal ChipSelect_delay : std_logic;
 	
-	signal VerticalScrollOffset : unsigned(7 downto 0);
-	signal HorizontalScrollOffset : unsigned(7 downto 0);
+	signal VerticalScrollOffset : unsigned(7 downto 0) := "00000000";
+	signal HorizontalScrollOffset : unsigned(7 downto 0) := "00000000";
 	
 	signal PPU_Address : unsigned(13 downto 0);
 	signal PPU_Data_r : std_logic_vector(7 downto 0);
@@ -120,7 +120,44 @@ end component;
 	type PaletteRAMType is array(31 downto 0) of std_logic_vector(5 downto 0);
 	
 	signal VRAMData : VRAMType := (others => "00000000");
-	signal PaletteRAM : PaletteRAMType := (others => "UUUUUU");
+	
+	        signal PaletteRAM : PaletteRAMType := (
+                0 =>  "000000",
+                1 =>  "000001",
+                2 =>  "000010",
+                3 =>  "000011",
+                4 =>  "000100",
+                5 =>  "000101",
+                6 =>  "000110",
+                7 =>  "000111",
+                8 =>  "001000",
+                9 =>  "001001",
+                10 => "001010",
+                11 => "001011",
+                12 => "001100",
+                13 => "001101",
+                14 => "001110",
+                15 => "001111",
+                16 => "010000",
+                17 => "010001",
+                18 => "010010",
+                19 => "010011",
+                20 => "010100",
+                21 => "010101",
+                22 => "010110",
+                23 => "010111",
+                24 => "011000",
+                25 => "011001",
+                26 => "011010",
+                27 => "011011",
+                28 => "011100",
+                29 => "011101",
+                30 => "011110",
+                31 => "011111"
+--              others => "UUUUUU"
+        );
+        
+
 	
 	type SpriteMemDataType is array(255 downto 0) of std_logic_vector(7 downto 0);
 	signal SpriteMemAddress : unsigned(7 downto 0);
@@ -161,15 +198,15 @@ end component;
 	signal TileVRAMAddress : unsigned(13 downto 0);
 begin
 
-	CHR_Address <= PPU_Address;
+	CHR_Address <= TileVRAMAddress;
 	
 	VBlank_n <= VBlankFlag nand Status_2000(7); -- Check on flag and VBlank Enable
 	
 	HPOS <= HSYNC_cnt - 42;
 	VPOS <= VSYNC_cnt;
 	
-	HPOS_u <= to_unsigned(HPOS, 9);
-	VPOS_u <= to_unsigned(VPOS, 9);
+--	HPOS_u <= to_unsigned(HPOS, 9);
+--	VPOS_u <= to_unsigned(VPOS, 9);
 	
 	CE <= '1' when CE_cnt = 0 else '0';
 	
@@ -335,6 +372,8 @@ begin
 				--InternalAddress := PPU_Address;
 				InternalAddress := TileVRAMAddress;
 			end if;
+		
+		  PPU_Address <= InternalAddress;	
 			
 			-- The 2C02 addresses the PPU memory bus with an 8 bit port
 			-- and an address latch, so all memory accesses except for internal
@@ -396,8 +435,8 @@ begin
 		CE => CE,
 		RSTN => RSTN,
 		
-		HPOS => HPOS_u,
-		VPOS => VPOS_u,
+		HPOS => HPOS,
+		VPOS => VPOS,
 		
       TileColor => TileColor,
 		
