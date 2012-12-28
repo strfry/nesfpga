@@ -6,19 +6,22 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity TileFetcher is	
 port  (
-        CLK : in std_logic;
-        CE : in std_logic;
-        RSTN : in std_logic;
-        
-        HPOS : in unsigned(8 downto 0);
-        VPOS : in unsigned(8 downto 0);
-        
-        TileColor : out unsigned(3 downto 0);
-        
-        VRAMAddress : out unsigned(13 downto 0);
-        VRAMData : in std_logic_vector(7 downto 0)
-		  
-        );
+		CLK : in std_logic;
+		CE : in std_logic;
+		RSTN : in std_logic;
+
+		HPOS : in unsigned(8 downto 0);
+		VPOS : in unsigned(8 downto 0);
+
+		VRAM_Address: out unsigned(13 downto 0);
+		VRAM_Data : in std_logic_vector(7 downto 0);
+
+		HorizontalScrollOffset : in unsigned(7 downto 0);
+		VerticalScrollOffset : in unsigned(7 downto 0);
+		NametableAddressOffset : in std_logic;
+
+		TileColor : out unsigned(3 downto 0)
+      );
 end TileFetcher;
 
 architecture Behavioral of TileFetcher is
@@ -28,14 +31,10 @@ architecture Behavioral of TileFetcher is
 	signal TilePattern1 : std_logic_vector(15 downto 0);
 	signal TileAttribute : std_logic_vector(15 downto 0);
 
-	signal VerticalScrollOffset : unsigned(7 downto 0);
-	signal HorizontalScrollOffset : unsigned(7 downto 0);
 	signal Status_2000 : std_logic_vector(7 downto 0);
 	
 begin
 
-	VerticalScrollOffset <= "00000000";
-	HorizontalScrollOffset <= "00000000";
 	Status_2000 <= "00000000";
 	
 	process (VPOS, HPOS, TilePattern0, TilePattern1, TileAttribute)
@@ -65,7 +64,7 @@ begin
 		variable NextTileAttribute : std_logic_vector(7 downto 0);
 	begin
 		if rstn = '0' then
-			VRAMAddress <= (others => '0');
+			VRAM_Address <= (others => '0');
 		elsif rising_edge(clk) and CE = '1' then			
 			Prefetch_XPOS := (to_integer(HPOS) + 16 + to_integer(HorizontalScrollOffset)) mod 256;
 			if HPOS > 240 then
@@ -99,39 +98,39 @@ begin
 						--TilePipeline(1).pattern1 <= "00110011";
 						--TilePipeline(1).pattern1 <= "00110011";
 						address := NametableBaseAddress + Prefetch_XPOS / 8 + (Prefetch_YPOS / 8) * 32;
-						VRAMAddress <= to_unsigned(address, VRAMAddress'length);
+						VRAM_Address <= to_unsigned(address, VRAM_Address'length);
 					when 1 =>
 					when 2 =>
-						NextTileName := unsigned(VRAMData);
+						NextTileName := unsigned(VRAM_Data);
 						--BGTileName <= X"24";
 						--BGTileName <= to_unsigned(8192 + HPOS / 8 + VPOS / 8 * 32, 8);
 						address :=  NametableBaseAddress + 960 + (Prefetch_XPOS - 2) / 32 + (Prefetch_YPOS / 32) * 8;
-						VRAMAddress <= to_unsigned(address, VRAMAddress'length);
+						VRAM_Address <= to_unsigned(address, VRAM_Address'length);
 					when 3 =>
 					when 4 =>
-						NextTileAttribute := VRAMData;
+						NextTileAttribute := VRAM_Data;
 						if Status_2000(4) = '1' then
 							address := 4096;
 						end if;
 						
 						address := address + to_integer(NextTileName * 16 + (Prefetch_YPOS mod 8));
-						VRAMAddress <=  to_unsigned(address, VRAMAddress'length);
+						VRAM_Address <=  to_unsigned(address, VRAM_Address'length);
 					when 5 =>
 					when 6 =>
-						NextTilePattern0 := VRAMData;
+						NextTilePattern0 := VRAM_Data;
 						if Status_2000(4) = '1' then
 							address := 4096;
 						end if;
 						
 						address := address + to_integer(NextTileName * 16 + (Prefetch_YPOS mod 8) + 8);
-						VRAMAddress <=  to_unsigned(address, VRAMAddress'length);
+						VRAM_Address <=  to_unsigned(address, VRAM_Address'length);
 						
 					when 7 =>
-						-- TilePattern0 <= NextTilePattern0 & TilePattern0(15 downto 8);
-						-- TilePattern1 <= VRAMData & TilePattern1(15 downto 8);
+						TilePattern0 <= NextTilePattern0 & TilePattern0(15 downto 8);
+						TilePattern1 <= VRAMData & TilePattern1(15 downto 8);
 						
-						TilePattern0 <= "0011001100110011";
-						TilePattern1 <= "0000111100001111";
+						--TilePattern0 <= "0011001100110011";
+						--TilePattern1 <= "0000111100001111";
 						TileAttribute <= NextTileAttribute & TileAttribute(15 downto 8);
 					when others =>
 				end case;
