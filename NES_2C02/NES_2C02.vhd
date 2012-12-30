@@ -74,7 +74,7 @@ port (
 
 		HorizontalScrollOffset : in unsigned(7 downto 0);
 		VerticalScrollOffset : in unsigned(7 downto 0);
-		NametableAddressOffset : in std_logic;
+		PatternTableAddressOffset : in std_logic;
 
 		TileColor : out unsigned(3 downto 0)
 );
@@ -259,106 +259,98 @@ begin
 	
 	CPU_PORT : process (clk)
 	begin	
-		if rising_edge(clk) then	
-			if CE = '1' then
-				if HPOS >= 0 and HPOS < 3 and VPOS = 0 then -- Start VBlank period
+		if rising_edge(clk) then
+		  if CE = '1' then
+		    if HPOS >= 0 and HPOS < 3 and VPOS = 0 then -- Start VBlank period
 					VBlankFlag <= '1';
 				elsif HPOS >= 0 and HPOS < 3 and VPOS = 20 then -- End VBlank Period
 					VBlankFlag <= '0';
 				end if;
-	
-				
-				
-		    	CPUVRAM_Write <= '0';
-		    	CPUVRAM_Read <= '0';
-
-		    	
-		    	if CPUVRAM_Read = '1' or CPUVRAM_Write = '1' then
-					if (Status_2000(2) = '0') then
-						CPUVRAM_Address <= CPUVRAM_Address + 1;
-					else
-						CPUVRAM_Address <= CPUVRAM_Address + 32;
-					end if;
-			    end if;			
-			end if;
-			
-
-			ChipSelect_delay <= ChipSelect_n;
-			Data_in_d <= Data_in;
-				
-			-- Do reads on low CS, and writes on rising edge
-			
-			if ChipSelect_n = '1' and ChipSelect_delay = '0' then
-				if ReadWrite = '0' then
-					if Address = "000" then
-						--Status_2000 <= Data_in_d;
-						Status_2000 <= Data_in_d(7 downto 2) & "00";
-					elsif Address = "001" then
-						Status_2001 <= Data_in_d;
-					elsif Address = "011" then
-						SpriteMemAddress <= unsigned(Data_in_d);
-					elsif Address = "100" then
-						SpriteMemData(to_integer(SpriteMemAddress)) <= Data_in_d;
-						SpriteMemAddress <= SpriteMemAddress + 1;
-					elsif Address = "101" then
-						if CPUPortDir = '1' then
-							if unsigned(Data_in_d) <= 239 then
-								VerticalScrollOffset <= unsigned(Data_in_d);
-							end if;
-						else
-							HorizontalScrollOffset <= unsigned(Data_in_d);
-						end if;
-						CPUPortDir <= not CPUPortDir;						
-					elsif Address = "110" then
-						if CPUPortDir = '0' then
-							CPUVRAM_Address(13 downto 8) <= unsigned(Data_in_d(5 downto 0));
-						else
-							CPUVRAM_Address(7 downto 0) <= unsigned(Data_in_d);
-						end if;						
-						CPUPortDir <= not CPUPortDir;					
-					elsif Address = "111" then					  
-					  CPUVRAM_Write <= '1';
-					  CPUVRAM_WriteData <= Data_in_d;
-					  
-					  -- Palette RAM is not actual RAM, just directly accessed registers, so implement it here
-					  if CPUVRAM_Address(13 downto 8) = X"3F" then
-					    PaletteRAM(to_integer(CPUVRAM_Address(4 downto 0))) <= Data_in_d(5 downto 0);
-						end if;
-					end if;
-				elsif Address = "010" then
-					CPUPortDir <= '0';
-					if VBlankFlag = '1' then
-						VBlankFlag <= '0';
-					end if; -- Reset VBlankFlag only once on write event
-				end if;
-			
-			elsif ChipSelect_n = '0' and ReadWrite = '1' then
-				if Address = "000" then
-					Data_out <= Status_2000;
-				elsif Address = "001" then
-					Data_out <= Status_2001;
-				elsif Address = "010" then
-					--Data_out <= (6 => HitSpriteFlag, 7 => VBlankFlag, others => '0');
-					Data_out <= (6 => HitSpriteFlag, 7 => '1', others => '0');
-				elsif Address = "100" then
-					Data_out <= SpriteRAMData_out;
-					SpriteRAMAddress <= std_logic_vector(unsigned(SpriteRAMAddress) + 1);
-				elsif Address = "111" then
-				  Data_out <= PPU_Data;
-				  CPUVRAM_Read <= '1';
-				  
-				  if CPUVRAM_Address(13 downto 8) = X"3F" then
-				    Data_out <= "00" & PaletteRAM(to_integer(CPUVRAM_Address(4 downto 0)));
+				  CPUVRAM_Write <= '0';
+		      CPUVRAM_Read <= '0';
+		      
+		      if CPUVRAM_Read = '1' or CPUVRAM_Write = '1' then
+		        if (Status_2000(2) = '0') then
+		          CPUVRAM_Address <= CPUVRAM_Address + 1;
+		        else
+		          CPUVRAM_Address <= CPUVRAM_Address + 32;
+		        end if;
+			    end if;
+			  end if;
+			  
+			  ChipSelect_delay <= ChipSelect_n;
+			  Data_in_d <= Data_in;
+			  
+			  -- Do reads on low CS, and writes on rising edge
+			  if ChipSelect_n = '1' and ChipSelect_delay = '0' then
+			    if ReadWrite = '0' then
+					  if Address = "000" then
+						  --Status_2000 <= Data_in_d;
+						  Status_2000 <= Data_in_d(7 downto 2) & "00";
+					  elsif Address = "001" then
+						  Status_2001 <= Data_in_d;
+					  elsif Address = "011" then
+					   	SpriteMemAddress <= unsigned(Data_in_d);
+					  elsif Address = "100" then
+						  SpriteMemData(to_integer(SpriteMemAddress)) <= Data_in_d;
+						  SpriteMemAddress <= SpriteMemAddress + 1;
+						elsif Address = "101" then
+						  if CPUPortDir = '1' then
+						    if unsigned(Data_in_d) <= 239 then
+						      VerticalScrollOffset <= unsigned(Data_in_d);
+						    end if;
+						  else
+						    HorizontalScrollOffset <= unsigned(Data_in_d);
+						  end if;
+						  CPUPortDir <= not CPUPortDir;
+						elsif Address = "110" then
+						  if CPUPortDir = '0' then
+							  CPUVRAM_Address(13 downto 8) <= unsigned(Data_in_d(5 downto 0));
+						  else
+							  CPUVRAM_Address(7 downto 0) <= unsigned(Data_in_d);
+							end if;						
+						  CPUPortDir <= not CPUPortDir;
+						elsif Address = "111" then					  
+					    CPUVRAM_Write <= '1';
+					    CPUVRAM_WriteData <= Data_in_d;
+					  					  
+					    -- Palette RAM is not actual RAM, just directly accessed registers, so implement it here
+					    if CPUVRAM_Address(13 downto 8) = X"3F" then
+					      PaletteRAM(to_integer(CPUVRAM_Address(4 downto 0))) <= Data_in_d(5 downto 0);
+						  end if;
+					  end if;
+					elsif Address = "010" then
+					  CPUPortDir <= '0';
+					  if VBlankFlag = '1' then
+						  VBlankFlag <= '0';
+					  end if; -- Reset VBlankFlag only once on write event
 				  end if;
-				else
-					Data_out <= (others => 'X'); -- This should be a write only register
-				end if;
-			end if;
-		end if;
+				elsif ChipSelect_n = '0' and ReadWrite = '1' then
+				  if Address = "000" then
+					  Data_out <= Status_2000;
+					elsif Address = "001" then
+					  Data_out <= Status_2001;
+				  elsif Address = "010" then
+					  --Data_out <= (6 => HitSpriteFlag, 7 => VBlankFlag, others => '0');
+					  Data_out <= (6 => HitSpriteFlag, 7 => '1', others => '0');
+				  elsif Address = "100" then
+					  Data_out <= SpriteRAMData_out;
+					  SpriteRAMAddress <= std_logic_vector(unsigned(SpriteRAMAddress) + 1);
+				  elsif Address = "111" then
+				    Data_out <= PPU_Data;
+				    CPUVRAM_Read <= '1';
+				    if CPUVRAM_Address(13 downto 8) = X"3F" then
+				      Data_out <= "00" & PaletteRAM(to_integer(CPUVRAM_Address(4 downto 0)));
+				    end if;
+				  else
+					  Data_out <= (others => 'X'); -- This should be a write only register
+				  end if;
+			  end if;
+		  end if;
 	end process;
 	
 	
-	PPU_ADDRESS_MUXER : process (CPUVRAM_Address, TileVRAMAddress, PPU_Address, VRAM_Data, CHR_Data)
+	PPU_ADDRESS_MUXER : process (CPUVRAM_Read, CPUVRAM_Write, CPUVRAM_Address, TileVRAMAddress, PPU_Address)
 	begin
 		if CPUVRAM_Read = '1' then
       PPU_Address <= CPUVRAM_Address;
@@ -391,7 +383,7 @@ begin
 	INTERNAL_VRAM : process (clk)
 	begin
 	  if rising_edge(clk) then
-			if CPUVRAM_Write = '1' then
+			if CE = '1' and CPUVRAM_Write = '1' and PPU_Address(13 downto 12) = "10" then
 			  VRAM(to_integer(PPU_Address(10 downto 0))) <= CPUVRAM_WriteData;
 			end if;
 		  VRAM_Data <= VRAM(to_integer(PPU_Address(10 downto 0)));
@@ -432,7 +424,7 @@ begin
 		
 		HorizontalScrollOffset => HorizontalScrollOffset,
 		VerticalScrollOffset => VerticalScrollOffset,
-		NametableAddressOffset => Status_2000(4),
+		PatternTableAddressOffset => Status_2000(4),
 		
 		VRAM_Address => TileVRAMAddress,
 		VRAM_Data => PPU_Data
