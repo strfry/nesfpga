@@ -120,9 +120,9 @@ begin
 						TilePattern0 <= NextTilePattern0 & TilePattern0(15 downto 8);
 						TileAttribute <= NextTileAttribute & TileAttribute(15 downto 8);
 						
-						
-						--TilePattern0 <= "0011001100110011";
-						--TilePattern1 <= "0000111100001111";
+						TileAttribute <= "0100110001110000";
+						TilePattern0 <= "0011001100110011";
+						TilePattern1 <= "0000111100001111";
 					when others =>
 				end case;
 			end if;

@@ -106,10 +106,10 @@ end component;
 	signal PPU_Address : unsigned(13 downto 0);
 	signal PPU_Data : std_logic_vector(7 downto 0);
 	
-	signal CPUVRAMAddress : unsigned(13 downto 0);
-	signal CPUVRAMWriteData : std_logic_vector(7 downto 0);
-	signal CPUVRAMRead : std_logic;
-	signal CPUVRAMWrite : std_logic;
+	signal CPUVRAM_Address : unsigned(13 downto 0);
+	signal CPUVRAM_WriteData : std_logic_vector(7 downto 0);
+	signal CPUVRAM_Read : std_logic;
+	signal CPUVRAM_Write : std_logic;
 	
 	type VRAMType is array(2047 downto 0) of std_logic_vector(7 downto 0);
 	type PaletteRAMType is array(31 downto 0) of std_logic_vector(5 downto 0);
@@ -269,15 +269,15 @@ begin
 	
 				
 				
-		    	CPUVRAMWrite <= '0';
-		    	CPUVRAMRead <= '0';
+		    	CPUVRAM_Write <= '0';
+		    	CPUVRAM_Read <= '0';
 
 		    	
-		    	if CPUVRAMRead = '1' or CPUVRAMWrite = '1' then
+		    	if CPUVRAM_Read = '1' or CPUVRAM_Write = '1' then
 					if (Status_2000(2) = '0') then
-						CPUVRAMAddress <= CPUVRAMAddress + 1;
+						CPUVRAM_Address <= CPUVRAM_Address + 1;
 					else
-						CPUVRAMAddress <= CPUVRAMAddress + 32;
+						CPUVRAM_Address <= CPUVRAM_Address + 32;
 					end if;
 			    end if;			
 			end if;
@@ -311,14 +311,19 @@ begin
 						CPUPortDir <= not CPUPortDir;						
 					elsif Address = "110" then
 						if CPUPortDir = '0' then
-							CPUVRAMAddress(13 downto 8) <= unsigned(Data_in_d(5 downto 0));
+							CPUVRAM_Address(13 downto 8) <= unsigned(Data_in_d(5 downto 0));
 						else
-							CPUVRAMAddress(7 downto 0) <= unsigned(Data_in_d);
+							CPUVRAM_Address(7 downto 0) <= unsigned(Data_in_d);
 						end if;						
 						CPUPortDir <= not CPUPortDir;					
-					elsif Address = "111" then
-						CPUVRAMWrite <= '1';
-						CPUVRAMWriteData <= Data_in_d;
+					elsif Address = "111" then					  
+					  CPUVRAM_Write <= '1';
+					  CPUVRAM_WriteData <= Data_in_d;
+					  
+					  -- Palette RAM is not actual RAM, just directly accessed registers, so implement it here
+					  if CPUVRAM_Address(13 downto 8) = X"3F" then
+					    PaletteRAM(to_integer(CPUVRAM_Address(4 downto 0))) <= Data_in_d(5 downto 0);
+						end if;
 					end if;
 				elsif Address = "010" then
 					CPUPortDir <= '0';
@@ -339,8 +344,12 @@ begin
 					Data_out <= SpriteRAMData_out;
 					SpriteRAMAddress <= std_logic_vector(unsigned(SpriteRAMAddress) + 1);
 				elsif Address = "111" then
-					Data_out <= PPU_Data;
-					CPUVRAMRead <= '1';
+				  Data_out <= PPU_Data;
+				  CPUVRAM_Read <= '1';
+				  
+				  if CPUVRAM_Address(13 downto 8) = X"3F" then
+				    Data_out <= "00" & PaletteRAM(to_integer(CPUVRAM_Address(4 downto 0)));
+				  end if;
 				else
 					Data_out <= (others => 'X'); -- This should be a write only register
 				end if;
@@ -349,24 +358,27 @@ begin
 	end process;
 	
 	
-	PPU_ADDRESS_MUXER : process (CPUVRAMAddress, TileVRAMAddress, PPU_Address, VRAM_Data, CHR_Data)
+	PPU_ADDRESS_MUXER : process (CPUVRAM_Address, TileVRAMAddress, PPU_Address, VRAM_Data, CHR_Data)
 	begin
-		if CPUVRAMRead = '1' then
-      PPU_Address <= CPUVRAMAddress;
-		elsif CPUVRAMWrite = '1' then
-			PPU_Address <= CPUVRAMAddress;
+		if CPUVRAM_Read = '1' then
+      PPU_Address <= CPUVRAM_Address;
+		elsif CPUVRAM_Write = '1' then
+			PPU_Address <= CPUVRAM_Address;
 		else
-			--InternalAddress := PPU_Address;
 			PPU_Address <= TileVRAMAddress;
 		end if;
 	end process;
 	
 	PPU_DATA_MUXER : process (PPU_Address, VRAM_Data, PaletteRAM, CHR_Data)
-	begin
+	begin	  
+		-- The cartridge has tri-state access to the address lines A10/A11,
+		-- so it can either provide additional 2k of SRAM, or tie them to 0
+		-- to mirror the address range of the upper nametables to the lower ones
+				
+		-- Super Mario Brothers selects vertical mirroring (A11 tied down),
+		-- so thats what we are doing here for now
 	  if PPU_Address(13 downto 12) = "10" then -- VRAM
 	    PPU_Data <= VRAM_Data;
-	  elsif PPU_Address(13 downto 8) = X"3F" then
-		  PPU_Data <= "00" & PaletteRAM(to_integer(PPU_Address(4 downto 0)));
 		else
 		  -- Default to external PPU Data
 		  PPU_Data <= CHR_Data;
@@ -379,21 +391,10 @@ begin
 	INTERNAL_VRAM : process (clk)
 	begin
 	  if rising_edge(clk) then
-	    if PPU_Address(13 downto 12) = "10" then -- SRAM
-				-- The cartridge has tri-state access to the address lines A10/A11,
-				-- so it can either provide additional 2k of SRAM, or tie them to 0
-				-- to mirror the address range of the upper nametables to the lower ones
-					
-				-- Super Mario Brothers selects vertical mirroring (A11 tied down),
-				-- so thats what we are doing here for now
-				
-				if CPUVRAMWrite = '1' then
-				  VRAM(to_integer(PPU_Address(10 downto 0))) <= CPUVRAMWriteData;
-				end if;
-			  VRAM_Data <= VRAM(to_integer(PPU_Address(10 downto 0)));
-			elsif PPU_Address(13 downto 8) = X"3F" then
-	      PaletteRAM(to_integer(PPU_Address(4 downto 0))) <= CPUVRAMWriteData(5 downto 0);
+			if CPUVRAM_Write = '1' then
+			  VRAM(to_integer(PPU_Address(10 downto 0))) <= CPUVRAM_WriteData;
 			end if;
+		  VRAM_Data <= VRAM(to_integer(PPU_Address(10 downto 0)));
 	  end if;	  
   end process;
 --	
