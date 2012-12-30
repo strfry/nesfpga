@@ -84,10 +84,7 @@ end component;
 	signal VSYNC_cnt : integer := 0;
 	signal HPOS : integer;
 	signal VPOS : integer;
-	
-	signal HPOS_u : unsigned(8 downto 0);
-	signal VPOS_u : unsigned(8 downto 0);
-	
+		
 	signal CE_cnt : unsigned(1 downto 0) := "00";
 	signal CE : std_logic;
 	
@@ -105,21 +102,20 @@ end component;
 	signal VerticalScrollOffset : unsigned(7 downto 0) := "00000000";
 	signal HorizontalScrollOffset : unsigned(7 downto 0) := "00000000";
 	
+	-- Internal Muxer outputs for read access on the PPU Memory Bus
 	signal PPU_Address : unsigned(13 downto 0);
-	signal PPU_Data_r : std_logic_vector(7 downto 0);
-	signal PPU_Data_w : std_logic_vector(7 downto 0);
---	signal VRAMData_in : std_logic_vector(7 downto 0);
---	signal VRAMData_out : std_logic_vector(7 downto 0);
-	
+	signal PPU_Data : std_logic_vector(7 downto 0);
 	
 	signal CPUVRAMAddress : unsigned(13 downto 0);
+	signal CPUVRAMWriteData : std_logic_vector(7 downto 0);
 	signal CPUVRAMRead : std_logic;
 	signal CPUVRAMWrite : std_logic;
 	
 	type VRAMType is array(2047 downto 0) of std_logic_vector(7 downto 0);
 	type PaletteRAMType is array(31 downto 0) of std_logic_vector(5 downto 0);
 	
-	signal VRAMData : VRAMType := (others => "00000000");
+	signal VRAM : VRAMType := (others => "00000000");
+	signal VRAM_Data : std_logic_vector(7 downto 0);
 	
 	        signal PaletteRAM : PaletteRAMType := (
                 0 =>  "000000",
@@ -158,7 +154,6 @@ end component;
         );
         
 
-	
 	type SpriteMemDataType is array(255 downto 0) of std_logic_vector(7 downto 0);
 	signal SpriteMemAddress : unsigned(7 downto 0);
 	signal SpriteMemData : SpriteMemDataType := (others => (others => '0'));
@@ -168,9 +163,6 @@ end component;
 	signal SpriteRAMData_out : std_logic_vector(7 downto 0);
 	signal SpriteRAMWriteEnable : std_logic;
 	
-	signal TilePattern0 : std_logic_vector(15 downto 0);
-	signal TilePattern1 : std_logic_vector(15 downto 0);
-	signal TileAttribute : std_logic_vector(15 downto 0);
 	
 	
 	type SpriteCacheEntry is record
@@ -198,7 +190,7 @@ end component;
 	signal TileVRAMAddress : unsigned(13 downto 0);
 begin
 
-	CHR_Address <= TileVRAMAddress;
+	CHR_Address <= PPU_Address;
 	
 	VBlank_n <= VBlankFlag nand Status_2000(7); -- Check on flag and VBlank Enable
 	
@@ -326,7 +318,7 @@ begin
 						CPUPortDir <= not CPUPortDir;					
 					elsif Address = "111" then
 						CPUVRAMWrite <= '1';
-						PPU_Data_w <= Data_in_d;
+						CPUVRAMWriteData <= Data_in_d;
 					end if;
 				elsif Address = "010" then
 					CPUPortDir <= '0';
@@ -347,7 +339,7 @@ begin
 					Data_out <= SpriteRAMData_out;
 					SpriteRAMAddress <= std_logic_vector(unsigned(SpriteRAMAddress) + 1);
 				elsif Address = "111" then
-					Data_out <= PPU_Data_r;
+					Data_out <= PPU_Data;
 					CPUVRAMRead <= '1';
 				else
 					Data_out <= (others => 'X'); -- This should be a write only register
@@ -356,57 +348,54 @@ begin
 		end if;
 	end process;
 	
-	RAM_ACCESS : process (clk)
-	variable InternalRW : std_logic;
-	variable InternalAddress : unsigned(13 downto 0);
+	
+	PPU_ADDRESS_MUXER : process (CPUVRAMAddress, TileVRAMAddress, PPU_Address, VRAM_Data, CHR_Data)
 	begin
-		if rising_edge(clk) and CE = '1' then
-			if CPUVRAMRead = '1' then
-				InternalRW := '1';
-				InternalAddress := CPUVRAMAddress;
-			elsif CPUVRAMWrite = '1' then
-				InternalRW := '0';
-				InternalAddress := CPUVRAMAddress;
-			else
-				InternalRW := '1';
-				--InternalAddress := PPU_Address;
-				InternalAddress := TileVRAMAddress;
-			end if;
-		
-		  PPU_Address <= InternalAddress;	
-			
-			-- The 2C02 addresses the PPU memory bus with an 8 bit port
-			-- and an address latch, so all memory accesses except for internal
-			-- palette RAM should take 2 Cycles, which is implemented by this process
-											
-			if InternalAddress(13 downto 8) = X"3F" then
-				-- Palette RAM Access takes just a single cycle
-				if InternalRW = '1' then
-					PPU_Data_r <= "00" & PaletteRAM(to_integer(InternalAddress(4 downto 0)));
-				else
-					PaletteRAM(to_integer(InternalAddress(4 downto 0))) <= PPU_Data_w(5 downto 0);
-				end if;
-			else 
-				if InternalAddress(13 downto 12) = "10" then -- SRAM
-					-- The cartridge has tri-state access to the address lines A10/A11,
-					-- so it can either provide additional 2k of SRAM, or tie them down
-					-- to mirror the address range of the upper nametables to the lower ones
-					
-					-- Super Mario Brothers selects vertical mirroring (A11 tied down),
-					-- so thats what we are doing here for now
-					
-					if InternalRW = '1' then
-						PPU_Data_r <= VRAMData(to_integer(InternalAddress(10 downto 0)));
-					else
-						VRAMData(to_integer(InternalAddress(10 downto 0))) <= PPU_Data_w;
-					end if;
-				else -- Cartridge CHR-RAM/ROM
-					-- CHR-RAM unimplemented for now
-					PPU_Data_r <= CHR_Data;
-				end if;
-			end if;
+		if CPUVRAMRead = '1' then
+      PPU_Address <= CPUVRAMAddress;
+		elsif CPUVRAMWrite = '1' then
+			PPU_Address <= CPUVRAMAddress;
+		else
+			--InternalAddress := PPU_Address;
+			PPU_Address <= TileVRAMAddress;
 		end if;
 	end process;
+	
+	PPU_DATA_MUXER : process (PPU_Address, VRAM_Data, PaletteRAM, CHR_Data)
+	begin
+	  if PPU_Address(13 downto 12) = "10" then -- VRAM
+	    PPU_Data <= VRAM_Data;
+	  elsif PPU_Address(13 downto 8) = X"3F" then
+		  PPU_Data <= "00" & PaletteRAM(to_integer(PPU_Address(4 downto 0)));
+		else
+		  -- Default to external PPU Data
+		  PPU_Data <= CHR_Data;
+		end if; 
+	end process;
+	
+	-- The nametable VRAM was an extern SRAM IC in the NES,
+	-- here it is implemented internally with BRAM
+	
+	INTERNAL_VRAM : process (clk)
+	begin
+	  if rising_edge(clk) then
+	    if PPU_Address(13 downto 12) = "10" then -- SRAM
+				-- The cartridge has tri-state access to the address lines A10/A11,
+				-- so it can either provide additional 2k of SRAM, or tie them to 0
+				-- to mirror the address range of the upper nametables to the lower ones
+					
+				-- Super Mario Brothers selects vertical mirroring (A11 tied down),
+				-- so thats what we are doing here for now
+				
+				if CPUVRAMWrite = '1' then
+				  VRAM(to_integer(PPU_Address(10 downto 0))) <= CPUVRAMWriteData;
+				end if;
+			  VRAM_Data <= VRAM(to_integer(PPU_Address(10 downto 0)));
+			elsif PPU_Address(13 downto 8) = X"3F" then
+	      PaletteRAM(to_integer(PPU_Address(4 downto 0))) <= CPUVRAMWriteData(5 downto 0);
+			end if;
+	  end if;	  
+  end process;
 --	
 --	SPRITE_SEL : SpriteSelector
 --	port map (
@@ -438,14 +427,14 @@ begin
 		HPOS => HPOS,
 		VPOS => VPOS,
 		
-      TileColor => TileColor,
+    TileColor => TileColor,
 		
 		HorizontalScrollOffset => HorizontalScrollOffset,
 		VerticalScrollOffset => VerticalScrollOffset,
-		NametableAddressOffset => Status_2000(1),
+		NametableAddressOffset => Status_2000(4),
 		
 		VRAM_Address => TileVRAMAddress,
-		VRAM_Data => PPU_Data_r
+		VRAM_Data => PPU_Data
 	);
 
 end arch;

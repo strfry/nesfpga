@@ -30,12 +30,8 @@ architecture Behavioral of TileFetcher is
 	signal TilePattern0 : std_logic_vector(15 downto 0);
 	signal TilePattern1 : std_logic_vector(15 downto 0);
 	signal TileAttribute : std_logic_vector(15 downto 0);
-
-	signal Status_2000 : std_logic_vector(7 downto 0);
 	
 begin
-
-	Status_2000 <= "00000000";
 	
 	process (VPOS, HPOS, TilePattern0, TilePattern1, TileAttribute)
 	variable attr_pos : integer;
@@ -75,63 +71,58 @@ begin
 			
 			Prefetch_YPOS := (Prefetch_YPOS + to_integer(VerticalScrollOffset)) mod 256;
 			
-			NametableBaseAddress := 8192;
+			NametableBaseAddress := 0;
+			if NametableAddressOffset = '1' then
+			  NametableBaseAddress := 4096;
+			end if;
+			
 			-- Select right-hand nametable when it is selected, or when scrolled in, and mirror back to the left when both is the case
-			if Prefetch_XPOS + HorizontalScrollOffset >= 256 xor Status_2000(0) = '1' then
-				NametableBaseAddress := NametableBaseAddress + 1024;
+			if Prefetch_XPOS + HorizontalScrollOffset >= 256 xor NametableAddressOffset = '1' then
+				--NametableBaseAddress := NametableBaseAddress + 1024;
 			end if;
 			
 			-- Same thing for vertical scroll
-			if Prefetch_YPOS + VerticalScrollOffset >= 256 xor Status_2000(1) = '1' then
-				NametableBaseAddress := NametableBaseAddress + 2048;
+			if Prefetch_YPOS + VerticalScrollOffset >= 256 xor NametableAddressOffset = '1' then
+				--NametableBaseAddress := NametableBaseAddress + 2048;
 			end if;
 			
 			address := 0;
 			
 			--PPU_Address <= (others => '0');
 			
---			if HPOS >= -15 and HPOS < 240 and VPOS >= -1 and VPOS < 240 then
-			if HPOS < 240 and VPOS < 240 then
+			if HPOS >= -15 and HPOS < 240 and VPOS >= -1 and VPOS < 240 then
+--			if HPOS < 240 and VPOS < 240 then
 				case HPOS mod 8 is
 					when 0 =>
-						--TilePipeline(1).pattern1 <= PPU_Data_r;
-						--TilePipeline(1).pattern1 <= "00110011";
-						--TilePipeline(1).pattern1 <= "00110011";
 						address := NametableBaseAddress + Prefetch_XPOS / 8 + (Prefetch_YPOS / 8) * 32;
 						VRAM_Address <= to_unsigned(address, VRAM_Address'length);
 					when 1 =>
-					when 2 =>
 						NextTileName := unsigned(VRAM_Data);
-						--BGTileName <= X"24";
-						--BGTileName <= to_unsigned(8192 + HPOS / 8 + VPOS / 8 * 32, 8);
+--						NextTileName := to_unsigned((Prefetch_XPOS / 8) mod 16 + (Prefetch_YPOS / 8) * 8, 8);
+--						NextTileName := X"23";
+					when 2 =>
 						address :=  NametableBaseAddress + 960 + (Prefetch_XPOS - 2) / 32 + (Prefetch_YPOS / 32) * 8;
 						VRAM_Address <= to_unsigned(address, VRAM_Address'length);
 					when 3 =>
-					when 4 =>
 						NextTileAttribute := VRAM_Data;
-						if Status_2000(4) = '1' then
-							address := 4096;
-						end if;
-						
-						address := address + to_integer(NextTileName * 16 + (Prefetch_YPOS mod 8));
+					when 4 =>						
+						address := NametableBaseAddress + to_integer(NextTileName * 16 + (Prefetch_YPOS mod 8));
 						VRAM_Address <=  to_unsigned(address, VRAM_Address'length);
 					when 5 =>
-					when 6 =>
 						NextTilePattern0 := VRAM_Data;
-						if Status_2000(4) = '1' then
-							address := 4096;
-						end if;
+					when 6 =>
 						
-						address := address + to_integer(NextTileName * 16 + (Prefetch_YPOS mod 8) + 8);
+						address := NametableBaseAddress + to_integer(NextTileName * 16 + (Prefetch_YPOS mod 8) + 8);
 						VRAM_Address <=  to_unsigned(address, VRAM_Address'length);
 						
 					when 7 =>
-						TilePattern0 <= NextTilePattern0 & TilePattern0(15 downto 8);
 						TilePattern1 <= VRAM_Data & TilePattern1(15 downto 8);
+						TilePattern0 <= NextTilePattern0 & TilePattern0(15 downto 8);
+						TileAttribute <= NextTileAttribute & TileAttribute(15 downto 8);
+						
 						
 						--TilePattern0 <= "0011001100110011";
 						--TilePattern1 <= "0000111100001111";
-						TileAttribute <= NextTileAttribute & TileAttribute(15 downto 8);
 					when others =>
 				end case;
 			end if;
