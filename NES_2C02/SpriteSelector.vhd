@@ -4,26 +4,29 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity SpriteSelector is
-	port  (
-        CLK : in std_logic;
-        CE : in std_logic;
-        RSTN : in std_logic;
+  port (
+    CLK : in std_logic;
+    CE : in std_logic;
+    RSTN : in std_logic;
         
-        HPOS : in unsigned(8 downto 0);
-        VPOS : in unsigned(8 downto 0);
+    HPOS : in integer;
+    VPOS : in integer;
+    
+    -- Selector output         
+    SpriteColor : out unsigned(3 downto 0); -- Current Sprite Palette Index, after selecting         
+    SpriteForegroundPriority : out std_logic; -- When '0', Sprite is only drawn when background is transparent ("00" Color)
+    SpriteIsPrimary : out std_logic; -- Is '1' when the current output results from object #0, used for collision detection flag
         
-        SpriteColor : out std_logic_vector(3 downto 0);
-        SpritePriority : out std_logic;
-        SpriteOverflow : out std_logic;
+    SpriteOverflowFlag : out std_logic; -- When more than 8 Sprites are detected on a scanline, this flag is set until the next VBlank period
         
-        VRAMAddress : out unsigned(13 downto 0);
-        VRAMData : in std_logic_vector(7 downto 0);
+    VRAM_Address : out unsigned(13 downto 0);
+    VRAM_Data : in std_logic_vector(7 downto 0);
         
-        SpriteRAMAddress : in std_logic_vector(7 downto 0);
-        SpriteRAMData_in : in std_logic_vector(7 downto 0);
-        SpriteRAMData_out : out std_logic_vector(7 downto 0);
-        SpriteRAMWriteEnable : in std_logic        
-        );
+    SpriteRAM_Address : in unsigned(7 downto 0);
+    SpriteRAM_Data_in : in std_logic_vector(7 downto 0);
+    SpriteRAM_Data_out : out std_logic_vector(7 downto 0);
+    SpriteRAM_WriteEnable : in std_logic        
+  );
 end SpriteSelector;
 
 
@@ -33,42 +36,72 @@ architecture arch of SpriteSelector is
 		x : unsigned(7 downto 0);
 		pattern0 : unsigned(7 downto 0);
 		pattern1 : unsigned(7 downto 0);
-		attr : unsigned(7 downto 0);
+		attr : unsigned(1 downto 0);
+		primary : std_logic;
+		foreground : std_logic;
 	end record;
 	
-	type LineBufferType is array(7 downto 0) of SpriteLineEntry;
-	signal LineBuffer : LineBufferType;
+	type SpriteLineBufferType is array(7 downto 0) of SpriteLineEntry;
+	signal SpriteLineBuffer : SpriteLineBufferType;
    
 begin
-    PIXEL_MUX : process (CLK)
-    variable colorBits : unsigned(1 downto 0);
-    begin
-        if rising_edge(CLK) and CE = '1' then
-            for i in 7 downto 0 loop
-                if LineBuffer(i).x < 8 then
-                    --colorBits := LineBuffer(i).pattern0(LineBuffer(i).x(3 downto 0)) &  LineBuffer(i).pattern1(LineBuffer(i).x(3 downto 0));
-						  colorBits := "00";
-                    
-                    if colorBits /= "00" then
-                        SpriteColor <= std_logic_vector(LineBuffer(i).attr & colorBits);
-                    end if;
-                end if;
-                LineBuffer(i).x <= LineBuffer(i).x - 1;
-            end loop;
-        end if;
-    end process;
+  
+  -- The Line Buffer contains up to 8 sprites, select the first one with non-zero color
+  PIXEL_MUX : process (SpriteLineBuffer)
+  variable sprite : SpriteLineEntry;
+  variable xpos : integer;
+  variable patternColor : unsigned(1 downto 0);
+  begin
+    SpriteColor <= "0000";
+    SpriteForegroundPriority <= '0';
+    SpriteIsPrimary <= '0';
     
---    PATTERN_FETCH : process (CLK)
---    begin
---    end process:
-
+    for i in 7 downto 0 loop -- Loop backwards to prioritize the first entry, as it is written last
+      sprite := SpriteLineBuffer(i);
+      xpos := to_integer(sprite.x);
+      if xpos < 8 then
+        patternColor := sprite.pattern0(xpos mod 8) & sprite.pattern1(xpos mod 8);
+        
+        if patternColor /= "00" then
+          SpriteColor <= unsigned(sprite.attr & patternColor);
+          SpriteForegroundPriority <= sprite.foreground;
+          SpriteIsPrimary <= sprite.primary;
+        end if;
+      end if;
+    end loop;
+  end process;
+  
+  DUMMY_SPRITES : process (clk)
+  begin
+    if rising_edge(clk) and CE = '1' then
+      if HPOS = 0 then
+        SpriteLineBuffer <= (others => (primary => '0', foreground => '0', attr => "00", others => "00000000"));
+      else
+        for i in 7 downto 0 loop
+          SpriteLineBuffer(i).x <= SpriteLineBuffer(i).x - 1;
+        end loop; 
+      end if;
+      if VPOS >= 54 and VPOS < 62 and HPOS = 1 then
+        SpriteLineBuffer(0).x <= to_unsigned(160, 8);
+        SpriteLineBuffer(0).pattern0 <= "01010101";
+        SpriteLineBuffer(0).pattern1 <= "11100011";
+        SpriteLineBuffer(0).attr <= "00";
+        SpriteLineBuffer(0).primary <= '1';
+        SpriteLineBuffer(0).foreground <= '1';
+      end if;
+      
+      
+    end if;
+  end process;
+    
+    
     LOOKUP : process (CLK)
     variable i, ydiff : integer;
     --variable currentSprite;
     begin
         if rising_edge(CLK) and CE = '1' then
             if HPOS = 0 then
-                LineBuffer <= (others => (others => (others => '0')));
+--                SpriteLineBuffer <= (others => (primary => '0', foreground => '0', attr => (others => '0'), others => (others => '0')));
 --                SpriteCounter <= 0;
 --            elsif HPOS > XX then
 --                i := HPOS mod 4;

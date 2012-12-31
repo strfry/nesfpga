@@ -37,29 +37,6 @@ end NES_2C02;
 
 architecture arch of NES_2C02 is
 
-component SpriteSelector is
-	port  (
-        CLK : in std_logic;
-        CE : in std_logic;
-        RSTN : in std_logic;
-        
-        HPOS : in unsigned(8 downto 0);
-        VPOS : in unsigned(8 downto 0);
-        
-        SpriteColor : out std_logic_vector(3 downto 0);
-        SpritePriority : out std_logic;
-        SpriteOverflow : out std_logic;
-        
-        VRAMAddress : out unsigned(13 downto 0);
-        VRAMData : in std_logic_vector(7 downto 0);
-        
-        SpriteRAMAddress : in std_logic_vector(7 downto 0);
-        SpriteRAMData_in : in std_logic_vector(7 downto 0);
-        SpriteRAMData_out : out std_logic_vector(7 downto 0);
-        SpriteRAMWriteEnable : in std_logic
-        );
-end component;
-
 component TileFetcher is
 port (
 		CLK : in std_logic;
@@ -78,6 +55,31 @@ port (
 
 		TileColor : out unsigned(3 downto 0)
 );
+end component;
+
+component SpriteSelector is
+  port (
+    CLK : in std_logic;
+    CE : in std_logic;
+    RSTN : in std_logic;
+        
+    HPOS : in integer;
+    VPOS : in integer;
+    
+    SpriteColor : out unsigned(3 downto 0);
+    SpriteForegroundPriority : out std_logic;
+    SpriteIsPrimary : out std_logic;
+        
+    SpriteOverflowFlag : out std_logic;
+        
+    VRAM_Address : out unsigned(13 downto 0);
+    VRAM_Data : in std_logic_vector(7 downto 0);
+        
+    SpriteRAM_Address : in unsigned(7 downto 0);
+    SpriteRAM_Data_in : in std_logic_vector(7 downto 0);
+    SpriteRAM_Data_out : out std_logic_vector(7 downto 0);
+    SpriteRAM_WriteEnable : in std_logic  
+  );
 end component;
 
 	signal HSYNC_cnt : integer := 0;
@@ -153,41 +155,22 @@ end component;
 --              others => "UUUUUU"
         );
         
-
-	type SpriteMemDataType is array(255 downto 0) of std_logic_vector(7 downto 0);
-	signal SpriteMemAddress : unsigned(7 downto 0);
-	signal SpriteMemData : SpriteMemDataType := (others => (others => '0'));
+  signal SpriteVRAM_Address : unsigned(13 downto 0);
+	signal SpriteRAM_Address : unsigned(7 downto 0);
+	signal SpriteRAM_Data_in : std_logic_vector(7 downto 0);
+	signal SpriteRAM_Data_out : std_logic_vector(7 downto 0);
+	signal SpriteRAM_WriteEnable : std_logic;
 	
-	signal SpriteRAMAddress : std_logic_vector(7 downto 0);
-	signal SpriteRAMData_in : std_logic_vector(7 downto 0);
-	signal SpriteRAMData_out : std_logic_vector(7 downto 0);
-	signal SpriteRAMWriteEnable : std_logic;
-	
-	
-	
-	type SpriteCacheEntry is record
-		x : unsigned(7 downto 0);
-		name : unsigned(7 downto 0);
-		attr : unsigned(7 downto 0);
-		y : unsigned(7 downto 0);
-		pattern0 : unsigned(7 downto 0);
-		pattern1 : unsigned(7 downto 0);
-	end record;
-	
-	type SpriteCacheType is array (0 to 7) of SpriteCacheEntry;
-	
-	signal SpriteCache : SpriteCacheType;	
-	
-	signal SpritesFound : integer range 0 to 8;
-	signal SpriteCounter : integer range 0 to 64;
+	signal SpriteColor : unsigned(3 downto 0);
+	signal SpriteForegroundPriority : std_logic;
+	signal SpriteIsPrimary : std_logic;
+	signal SpriteOverflowFlag : std_logic;
 	
 	
-	signal SpriteColor : std_logic_vector(3 downto 0);
-	signal SpriteOverflow : std_logic;
-	signal BGTileName : unsigned(7 downto 0);
+	signal TileVRAM_Address : unsigned(13 downto 0);
 	
 	signal TileColor : unsigned(3 downto 0);
-	signal TileVRAMAddress : unsigned(13 downto 0);
+	
 begin
 
 	CHR_Address <= PPU_Address;
@@ -226,20 +209,24 @@ begin
 	end process;
 	
 	process (clk)
-	variable attr_pos : integer;
-	variable attr_color : unsigned(1 downto 0);
-	variable bg_color : unsigned(3 downto 0);
+	variable color : unsigned(3 downto 0);
 	begin
 		if rising_edge(clk) and CE = '1' then
 			if HPOS >= 0 and HPOS < 256 and VPOS >= 0 and VPOS < 240 then
 				FB_DE <= '1';
 				FB_Address <= std_logic_vector(to_unsigned(VPOS * 256 + HPOS, FB_Address'length));
 				
-				FB_Color <= std_logic_vector(PaletteRAM(to_integer(TileColor) mod 32));
-				
-				if SpritesFound > 0 then
-					if SpriteCache(0).x - HPOS < 8 then FB_Color <= "101111"; end if;
+				color := TileColor;
+				if (SpriteForegroundPriority = '1' or TileColor(1 downto 0) = "00") and SpriteColor(1 downto 0) /= "00" then
+				  color := SpriteColor;
 				end if;
+				
+				FB_Color <= std_logic_vector(PaletteRAM(to_integer(color) mod 32));
+
+				
+				--if SpritesFound > 0 then
+				--	if SpriteCache(0).x - HPOS < 8 then FB_Color <= "101111"; end if;
+				--end if;
 				
 				
 				if VPOS >= 230 then
@@ -265,99 +252,106 @@ begin
 					VBlankFlag <= '1';
 				elsif HPOS >= 0 and HPOS < 3 and VPOS = 20 then -- End VBlank Period
 					VBlankFlag <= '0';
+					HitSpriteFlag <= '0';
 				end if;
-				  CPUVRAM_Write <= '0';
-		      CPUVRAM_Read <= '0';
+								
+    		  CPUVRAM_Write <= '0';
+		    CPUVRAM_Read <= '0';
+				SpriteRAM_WriteEnable <= '0';
 		      
-		      if CPUVRAM_Read = '1' or CPUVRAM_Write = '1' then
-		        if (Status_2000(2) = '0') then
-		          CPUVRAM_Address <= CPUVRAM_Address + 1;
-		        else
-		          CPUVRAM_Address <= CPUVRAM_Address + 32;
-		        end if;
-			    end if;
+		    if CPUVRAM_Read = '1' or CPUVRAM_Write = '1' then
+		      if (Status_2000(2) = '0') then
+		        CPUVRAM_Address <= CPUVRAM_Address + 1;
+		      else
+		        CPUVRAM_Address <= CPUVRAM_Address + 32;
+		      end if;
 			  end if;
 			  
-			  ChipSelect_delay <= ChipSelect_n;
-			  Data_in_d <= Data_in;
+			  -- Check for Sprite 0 collision
+			  if TileColor(1 downto 0) /= "00" and SpriteColor(1 downto 0) /= "00" and SpriteIsPrimary = '1' then
+			    HitSpriteFlag <= '1';
+		    end if;
+			end if;
 			  
-			  -- Do reads on low CS, and writes on rising edge
-			  if ChipSelect_n = '1' and ChipSelect_delay = '0' then
-			    if ReadWrite = '0' then
-					  if Address = "000" then
+			ChipSelect_delay <= ChipSelect_n;
+			Data_in_d <= Data_in;
+			  
+			-- Do reads on low CS, and writes on rising edge
+			if ChipSelect_n = '1' and ChipSelect_delay = '0' then
+			  if ReadWrite = '0' then
+			   if Address = "000" then
 						  --Status_2000 <= Data_in_d;
-						  Status_2000 <= Data_in_d(7 downto 2) & "00";
-					  elsif Address = "001" then
-						  Status_2001 <= Data_in_d;
-					  elsif Address = "011" then
-					   	SpriteMemAddress <= unsigned(Data_in_d);
-					  elsif Address = "100" then
-						  SpriteMemData(to_integer(SpriteMemAddress)) <= Data_in_d;
-						  SpriteMemAddress <= SpriteMemAddress + 1;
-						elsif Address = "101" then
-						  if CPUPortDir = '1' then
-						    if unsigned(Data_in_d) <= 239 then
-						      VerticalScrollOffset <= unsigned(Data_in_d);
-						    end if;
-						  else
-						    HorizontalScrollOffset <= unsigned(Data_in_d);
-						  end if;
-						  CPUPortDir <= not CPUPortDir;
-						elsif Address = "110" then
-						  if CPUPortDir = '0' then
-							  CPUVRAM_Address(13 downto 8) <= unsigned(Data_in_d(5 downto 0));
-						  else
-							  CPUVRAM_Address(7 downto 0) <= unsigned(Data_in_d);
-							end if;						
-						  CPUPortDir <= not CPUPortDir;
-						elsif Address = "111" then					  
-					    CPUVRAM_Write <= '1';
-					    CPUVRAM_WriteData <= Data_in_d;
-					  					  
-					    -- Palette RAM is not actual RAM, just directly accessed registers, so implement it here
-					    if CPUVRAM_Address(13 downto 8) = X"3F" then
-					      PaletteRAM(to_integer(CPUVRAM_Address(4 downto 0))) <= Data_in_d(5 downto 0);
-						  end if;
-					  end if;
-					elsif Address = "010" then
-					  CPUPortDir <= '0';
-					  if VBlankFlag = '1' then
-						  VBlankFlag <= '0';
-					  end if; -- Reset VBlankFlag only once on write event
-				  end if;
-				elsif ChipSelect_n = '0' and ReadWrite = '1' then
-				  if Address = "000" then
-					  Data_out <= Status_2000;
+						Status_2000 <= Data_in_d(7 downto 2) & "00";
 					elsif Address = "001" then
-					  Data_out <= Status_2001;
-				  elsif Address = "010" then
-					  --Data_out <= (6 => HitSpriteFlag, 7 => VBlankFlag, others => '0');
-					  Data_out <= (6 => HitSpriteFlag, 7 => '1', others => '0');
-				  elsif Address = "100" then
-					  Data_out <= SpriteRAMData_out;
-					  SpriteRAMAddress <= std_logic_vector(unsigned(SpriteRAMAddress) + 1);
-				  elsif Address = "111" then
-				    Data_out <= PPU_Data;
-				    CPUVRAM_Read <= '1';
-				    if CPUVRAM_Address(13 downto 8) = X"3F" then
-				      Data_out <= "00" & PaletteRAM(to_integer(CPUVRAM_Address(4 downto 0)));
-				    end if;
-				  else
-					  Data_out <= (others => 'X'); -- This should be a write only register
+            Status_2001 <= Data_in_d;
+					elsif Address = "011" then
+					  SpriteRAM_Address <= unsigned(Data_in_d);
+					elsif Address = "100" then
+						SpriteRAM_Data_in <= Data_in_d;
+						SpriteRAM_WriteEnable <= '1';
+						SpriteRAM_Address <= SpriteRAM_Address + 1;
+				  elsif Address = "101" then
+						if CPUPortDir = '1' then
+						  if unsigned(Data_in_d) <= 239 then
+						    VerticalScrollOffset <= unsigned(Data_in_d);
+						  end if;
+						else
+						  HorizontalScrollOffset <= unsigned(Data_in_d);
+						end if;
+						CPUPortDir <= not CPUPortDir;
+				  elsif Address = "110" then
+						if CPUPortDir = '0' then
+							CPUVRAM_Address(13 downto 8) <= unsigned(Data_in_d(5 downto 0));
+						else
+							CPUVRAM_Address(7 downto 0) <= unsigned(Data_in_d);
+					  end if;						
+						CPUPortDir <= not CPUPortDir;
+				  elsif Address = "111" then					  
+					  CPUVRAM_Write <= '1';
+					  CPUVRAM_WriteData <= Data_in_d;
+					  					  
+					  -- Palette RAM is not actual RAM, just directly accessed registers, so implement it here
+					  if CPUVRAM_Address(13 downto 8) = X"3F" then
+					    PaletteRAM(to_integer(CPUVRAM_Address(4 downto 0))) <= Data_in_d(5 downto 0);
+						end if;
 				  end if;
-			  end if;
-		  end if;
+				elsif Address = "010" then
+					VBlankFlag <= '0'; -- Reset flag at the end of read period
+					CPUPortDir <= '0'; -- Reset 16 bit register selector
+				end if;
+		  elsif ChipSelect_n = '0' and ReadWrite = '1' then
+				if Address = "000" then
+					Data_out <= Status_2000;
+			  elsif Address = "001" then
+					Data_out <= Status_2001;
+				elsif Address = "010" then
+					Data_out <= (6 => HitSpriteFlag, 7 => VBlankFlag, others => '0');
+					--Data_out <= (6 => HitSpriteFlag, 7 => '1', others => '0');
+				elsif Address = "100" then
+					Data_out <= SpriteRAM_Data_out;
+					SpriteRAM_Address <= SpriteRAM_Address + 1;
+				elsif Address = "111" then
+				  Data_out <= PPU_Data;
+				  CPUVRAM_Read <= '1';
+				  if CPUVRAM_Address(13 downto 8) = X"3F" then
+				    Data_out <= "00" & PaletteRAM(to_integer(CPUVRAM_Address(4 downto 0)));
+				  end if;
+				else
+					Data_out <= (others => 'X'); -- This should be a write only register
+				end if;
+			end if;
+		end if;
 	end process;
 	
 	
-	PPU_ADDRESS_MUXER : process (CPUVRAM_Read, CPUVRAM_Write, CPUVRAM_Address, TileVRAMAddress, PPU_Address)
+	PPU_ADDRESS_MUXER : process (CPUVRAM_Read, CPUVRAM_Write, CPUVRAM_Address, TileVRAM_Address, PPU_Address)
 	begin
 		if CPUVRAM_Read = '1' then
       PPU_Address <= CPUVRAM_Address;
 		elsif CPUVRAM_Write = '1' then
 			PPU_Address <= CPUVRAM_Address;
 		else
-			PPU_Address <= TileVRAMAddress;
+			PPU_Address <= TileVRAM_Address;
 		end if;
 	end process;
 	
@@ -389,27 +383,30 @@ begin
 		  VRAM_Data <= VRAM(to_integer(PPU_Address(10 downto 0)));
 	  end if;	  
   end process;
---	
---	SPRITE_SEL : SpriteSelector
---	port map (
---		CLK => CLK,
---		CE => CE,
---		RSTN => RSTN,
---		
---		HPOS => HPOS_u,
---		VPOS => VPOS_u,
---		
---		SpriteColor => SpriteColor,
---		SpriteOverflow => SpriteOverflow,
---		
-----		VRAMAddress => VRAMAddress,
---		VRAMData => PPU_Data_r,
---		
---		SpriteRAMAddress => SpriteRAMAddress,
---		SpriteRAMData_in => SpriteRAMData_in,
---		SpriteRAMData_out => SpriteRAMData_out,
---		SpriteRAMWriteEnable => SpriteRAMWriteEnable
---        );
+	
+	SPRITE_SEL : SpriteSelector
+	port map (
+		CLK => CLK,
+		CE => CE,
+		RSTN => RSTN,
+		
+		HPOS => HPOS,
+		VPOS => VPOS,
+		
+		SpriteColor => SpriteColor,
+		SpriteForegroundPriority => SpriteForegroundPriority,
+		SpriteIsPrimary => SpriteIsPrimary,
+		
+		SpriteOverflowFlag => SpriteOverflowFlag,
+		
+		VRAM_Address => SpriteVRAM_Address,
+		VRAM_Data => PPU_Data,
+	
+		SpriteRAM_Address => SpriteRAM_Address,
+		SpriteRAM_Data_in => SpriteRAM_Data_in,
+		SpriteRAM_Data_out => SpriteRAM_Data_out,
+		SpriteRAM_WriteEnable => SpriteRAM_WriteEnable
+  );
 		  
 	TILE_FETCHER : TileFetcher
 	port map (
@@ -426,7 +423,7 @@ begin
 		VerticalScrollOffset => VerticalScrollOffset,
 		PatternTableAddressOffset => Status_2000(4),
 		
-		VRAM_Address => TileVRAMAddress,
+		VRAM_Address => TileVRAM_Address,
 		VRAM_Data => PPU_Data
 	);
 

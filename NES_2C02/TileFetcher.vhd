@@ -97,14 +97,14 @@ begin
 --			if HPOS < 240 and VPOS < 240 then
 				case HPOS mod 8 is
 					when 0 =>
-						address := NametableBaseAddress + Prefetch_XPOS / 8 + (Prefetch_YPOS / 8) * 32;
+						address := NameTableBaseAddress + Prefetch_XPOS / 8 + (Prefetch_YPOS / 8) * 32;
 						VRAM_Address <= to_unsigned(address, VRAM_Address'length);
 					when 1 =>
 						NextTileName := unsigned(VRAM_Data);
 --						NextTileName := to_unsigned((Prefetch_XPOS / 8) mod 16 + (Prefetch_YPOS / 8) * 8, 8);
 --						NextTileName := X"23";
 					when 2 =>
-						address :=  PatternTableBaseAddress + 960 + (Prefetch_XPOS - 2) / 32 + (Prefetch_YPOS / 32) * 8;
+						address :=  NameTableBaseAddress + 960 + (Prefetch_XPOS - 2) / 32 + (Prefetch_YPOS / 32) * 8;
 						VRAM_Address <= to_unsigned(address, VRAM_Address'length);
 					when 3 =>
 						NextTileAttribute := VRAM_Data;
