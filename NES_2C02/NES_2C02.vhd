@@ -52,6 +52,7 @@ port (
 		HorizontalScrollOffset : in unsigned(7 downto 0);
 		VerticalScrollOffset : in unsigned(7 downto 0);
 		PatternTableAddressOffset : in std_logic;
+		NameTableAddressOffset : in std_logic_vector(1 downto 0);
 
 		TileColor : out unsigned(3 downto 0)
 );
@@ -65,6 +66,8 @@ component SpriteSelector is
         
     HPOS : in integer;
     VPOS : in integer;
+    
+		PatternTableAddressOffset : in std_logic;
     
     SpriteColor : out unsigned(3 downto 0);
     SpriteForegroundPriority : out std_logic;
@@ -82,10 +85,13 @@ component SpriteSelector is
   );
 end component;
 
-	signal HSYNC_cnt : integer := 0;
-	signal VSYNC_cnt : integer := 0;
-	signal HPOS : integer;
-	signal VPOS : integer;
+  -- Internal H/V Counters
+	signal HSYNC_cnt : integer range 0 to 340 := 0;
+	signal VSYNC_cnt : integer range 0 to 261 := 0;
+	
+	-- Derived counters with more useful value range
+	signal HPOS : integer range -42 to 298; -- negative values mark the HBlank period
+	signal VPOS : integer range 0 to 261; -- 240 to 261 is the VBlank period
 		
 	signal CE_cnt : unsigned(1 downto 0) := "00";
 	signal CE : std_logic;
@@ -393,6 +399,8 @@ begin
 		HPOS => HPOS,
 		VPOS => VPOS,
 		
+		PatternTableAddressOffset => Status_2000(3),
+		
 		SpriteColor => SpriteColor,
 		SpriteForegroundPriority => SpriteForegroundPriority,
 		SpriteIsPrimary => SpriteIsPrimary,
@@ -422,6 +430,7 @@ begin
 		HorizontalScrollOffset => HorizontalScrollOffset,
 		VerticalScrollOffset => VerticalScrollOffset,
 		PatternTableAddressOffset => Status_2000(4),
+		NameTableAddressOffset => Status_2000(1 downto 0),
 		
 		VRAM_Address => TileVRAM_Address,
 		VRAM_Data => PPU_Data
