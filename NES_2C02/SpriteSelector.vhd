@@ -9,8 +9,8 @@ entity SpriteSelector is
     CE : in std_logic;
     RSTN : in std_logic;
         
-    HPOS : in integer;
-    VPOS : in integer;
+    HPOS : in integer range -42 to 298;
+    VPOS : in integer range 0 to 261;
     
 		PatternTableAddressOffset : in std_logic;
     
@@ -21,7 +21,7 @@ entity SpriteSelector is
         
     SpriteOverflowFlag : out std_logic; -- When more than 8 Sprites are detected on a scanline, this flag is set until the next VBlank period
         
-    VRAM_Address : out unsigned(13 downto 0);
+    VRAM_Address : out unsigned(13 downto 0) := (others => '0');
     VRAM_Data : in std_logic_vector(7 downto 0);
         
     SpriteRAM_Address : in unsigned(7 downto 0);
@@ -70,10 +70,10 @@ architecture arch of SpriteSelector is
 	end record;
 	
 	type LineBufferType is array(7 downto 0) of LineBufferEntry;
-	signal SpriteLineBuffer : LineBufferType;
+	signal SpriteLineBuffer : LineBufferType := (others => (attr => "00", foreground => '0', primary => '0', others => "00000000"));
 	
 	type TempLineBufferType is array(7 downto 0) of TempLineBufferEntry;
-	signal TempLineBuffer : TempLineBufferType;
+	signal TempLineBuffer : TempLineBufferType := (others => (attr => "00", foreground => '0', xflip => '0', primary => '0', others => "00000000"));
 	
 	type SpriteRAMType is array(255 downto 0) of std_logic_vector(7 downto 0);
 	signal SpriteRAM : SpriteRAMType := (
@@ -180,43 +180,43 @@ begin
 	variable currentSprite : integer;
 	variable patternAddress : unsigned(13 downto 0);
 	begin
-	  if rising_edge(clk) and CE = '1' then
-	    if HPOS >= 0 and HPOS < 256 then
-		    for i in 7 downto 0 loop
-		      if SpriteLineBuffer(i).x > 0 then
-		        SpriteLineBuffer(i).x <= SpriteLineBuffer(i).x - 1;
-		      else
-		        SpriteLineBuffer(i).pattern0 <= SpriteLineBuffer(i).pattern0 srl 1;
-		        SpriteLineBuffer(i).pattern1 <= SpriteLineBuffer(i).pattern1 srl 1;
-		      end if;
-		    end loop;
-		  elsif HPOS >= 256 and HPOS < 288 then
-		    currentSprite := (HPOS - 256) / 4;
-		    patternAddress := "0" & PatternTableAddressOffset &
-		      TempLineBuffer(currentSprite).patternIndex & TempLineBuffer(currentSprite).ydiff(3 downto 0);
-		      
-		    if currentSprite < NumSpritesFound then
-		      case HPOS mod 4 is
-		        when 0 =>
-		          VRAM_Address <= patternAddress;
-		        when 1 => 
-		          SpriteLineBuffer(currentSprite).pattern0 <= unsigned(VRAM_Data);
-		          VRAM_Address <= patternAddress + 8;
-		        when 2 =>
-		          SpriteLineBuffer(currentSprite).pattern1 <= unsigned(VRAM_Data);
-		          SpriteLineBuffer(currentSprite).x <= TempLineBuffer(currentSprite).x;
-		          SpriteLineBuffer(currentSprite).attr <= TempLineBuffer(currentSprite).attr;
-		          SpriteLineBuffer(currentSprite).primary <= TempLineBuffer(currentSprite).primary;
-		          SpriteLineBuffer(currentSprite).foreground <= TempLineBuffer(currentSprite).foreground;
-		          
-		          SpriteLineBuffer(currentSprite).pattern0 <= X"FF";
-		          SpriteLineBuffer(currentSprite).pattern1 <= X"FF";
-		        when others =>
-		      end case;
-		    end if;
-		    		  
-		  end if;
-	    
-    end if;
+--	  if rising_edge(clk) and CE = '1' then
+--	    if HPOS >= 0 and HPOS < 256 then
+--		    for i in 7 downto 0 loop
+--		      if SpriteLineBuffer(i).x > 0 then
+--		        SpriteLineBuffer(i).x <= SpriteLineBuffer(i).x - 1;
+--		      else
+--		        SpriteLineBuffer(i).pattern0 <= SpriteLineBuffer(i).pattern0 srl 1;
+--		        SpriteLineBuffer(i).pattern1 <= SpriteLineBuffer(i).pattern1 srl 1;
+--		      end if;
+--		    end loop;
+--		  elsif HPOS >= 256 and HPOS < 288 then
+--		    currentSprite := (HPOS - 256) / 4;
+--		    patternAddress := "0" & PatternTableAddressOffset &
+--		      TempLineBuffer(currentSprite).patternIndex & TempLineBuffer(currentSprite).ydiff(3 downto 0);
+--		      
+--		    if currentSprite < NumSpritesFound then
+--		      case HPOS mod 4 is
+--		        when 0 =>
+--		          VRAM_Address <= patternAddress;
+--		        when 1 => 
+--		          SpriteLineBuffer(currentSprite).pattern0 <= unsigned(VRAM_Data);
+--		          VRAM_Address <= patternAddress + 8;
+--		        when 2 =>
+--		          SpriteLineBuffer(currentSprite).pattern1 <= unsigned(VRAM_Data);
+--		          SpriteLineBuffer(currentSprite).x <= TempLineBuffer(currentSprite).x;
+--		          SpriteLineBuffer(currentSprite).attr <= TempLineBuffer(currentSprite).attr;
+--		          SpriteLineBuffer(currentSprite).primary <= TempLineBuffer(currentSprite).primary;
+--		          SpriteLineBuffer(currentSprite).foreground <= TempLineBuffer(currentSprite).foreground;
+--		          
+--		          SpriteLineBuffer(currentSprite).pattern0 <= X"FF";
+--		          SpriteLineBuffer(currentSprite).pattern1 <= X"FF";
+--		        when others =>
+--		      end case;
+--		    end if;
+--		    		  
+--		  end if;
+--	    
+--    end if;
   end process;
 end arch;
