@@ -162,7 +162,7 @@ end component;
         );
         
   signal SpriteVRAM_Address : unsigned(13 downto 0);
-	signal SpriteRAM_Address : unsigned(7 downto 0);
+	signal SpriteRAM_Address : unsigned(7 downto 0) := X"00";
 	signal SpriteRAM_Data_in : std_logic_vector(7 downto 0);
 	signal SpriteRAM_Data_out : std_logic_vector(7 downto 0);
 	signal SpriteRAM_WriteEnable : std_logic;
@@ -350,14 +350,16 @@ begin
 	end process;
 	
 	
-	PPU_ADDRESS_MUXER : process (CPUVRAM_Read, CPUVRAM_Write, CPUVRAM_Address, TileVRAM_Address, PPU_Address)
+	PPU_ADDRESS_MUXER : process (CPUVRAM_Read, CPUVRAM_Write, CPUVRAM_Address, TileVRAM_Address)
 	begin
 		if CPUVRAM_Read = '1' then
       PPU_Address <= CPUVRAM_Address;
 		elsif CPUVRAM_Write = '1' then
 			PPU_Address <= CPUVRAM_Address;
-		else
+		elsif HPOS >= 0 and HPOS < 256 then
 			PPU_Address <= TileVRAM_Address;
+		else
+		  PPU_Address <= SpriteVRAM_Address;
 		end if;
 	end process;
 	

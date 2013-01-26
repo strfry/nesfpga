@@ -19,6 +19,7 @@ port  (
 		HorizontalScrollOffset : in unsigned(7 downto 0);
 		VerticalScrollOffset : in unsigned(7 downto 0);
 		PatternTableAddressOffset : in std_logic;
+		NameTableAddressOffset : in std_logic_vector(1 downto 0);
 
 		TileColor : out unsigned(3 downto 0)
       );
@@ -80,19 +81,20 @@ begin
 			
 			NameTableBaseAddress := 8192;
 			-- Select right-hand nametable when it is selected, or when scrolled in, and mirror back to the left when both is the case
-			--if Prefetch_XPOS + HorizontalScrollOffset >= 256 xor NametableAddressOffset = '1' then
-				--NametableBaseAddress := NametableBaseAddress + 1024;
-			--end if;
+			if Prefetch_XPOS + HorizontalScrollOffset >= 256 xor NametableAddressOffset(0) = '1' then
+				NametableBaseAddress := NametableBaseAddress + 1024;
+			end if;
 			
 			-- Same thing for vertical scroll
-			--if Prefetch_YPOS + VerticalScrollOffset >= 256 xor NametableAddressOffset = '1' then
-				--NametableBaseAddress := NametableBaseAddress + 2048;
-			--end if;
+			if Prefetch_YPOS + VerticalScrollOffset >= 256 xor NametableAddressOffset(1) = '1' then
+				NametableBaseAddress := NametableBaseAddress + 2048;
+			end if;
 			
 			address := 0;
 			
 			--PPU_Address <= (others => '0');
 			
+--			if HPOS >= -15 and HPOS < 240 and VPOS >= -1 and VPOS < 240 then
 			if HPOS >= -15 and HPOS < 240 and VPOS >= -1 and VPOS < 240 then
 --			if HPOS < 240 and VPOS < 240 then
 				case HPOS mod 8 is
