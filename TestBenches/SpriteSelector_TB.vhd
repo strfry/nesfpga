@@ -2,7 +2,7 @@ LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
 USE ieee.numeric_std.ALL;
 
-use STD.textio.all;
+use STD.textio.ALL;
 
 use work.NES_Pack.all;
  
@@ -51,10 +51,9 @@ ARCHITECTURE behavior OF SpriteSelector_TB IS
   -- Clock period definitions
   constant CLK_period : time := 10 ns;
   
-  
-  type fb_ram_type is array(65535 downto 0) of std_logic_vector(5 downto 0);
+  constant fb_size : integer :=	340 * 261 - 1; 
+  type fb_ram_type is array(fb_size downto 0) of std_logic_vector(5 downto 0);
   type FramebufferFileType is file of fb_ram_type;
-
 	signal fb_ram : fb_ram_type := (others => "101010");
 	
 
@@ -73,18 +72,6 @@ BEGIN
   
   CLK_proc : process
   begin
-    CLK <= '0';
-    wait for CLK_period / 2;
-    CLK <= '1';
-    wait for CLK_period / 2;
-    CLK <= '0';
-    wait for CLK_period / 2;
-    CLK <= '1';
-    wait for CLK_period / 2;
-    CLK <= '0';
-    wait for CLK_period / 2;
-    CLK <= '1';
-    wait for CLK_period / 2;
     CLK <= '0';
     wait for CLK_period / 2;
     CLK <= '1';
@@ -139,9 +126,9 @@ BEGIN
         HPOS <= -42;
         VPOS <= 0;
       else        
-        if HPOS = 298 then
+        if HPOS = 297 then
           HPOS <= -42;
-          if VPOS = 261 then
+          if VPOS = 260 then
             VPOS <= 0;
           else
             VPOS <= VPOS + 1;
@@ -164,8 +151,30 @@ BEGIN
     wait for 100 ns;  
 
     wait for CLK_period*10;
+
     
     RSTN <= '1';
+
+    SpriteRAM_WriteEnable <= '1';
+
+    for i in 0 to 63 loop
+      SpriteRAM_Address	<= to_unsigned(i, 8);
+      case i mod 4 is
+        when 0 =>
+          SpriteRAM_Data_in <= std_logic_vector(to_unsigned(40 + (i / 8) * 8, 8));
+        when 1 =>
+          SpriteRAM_Data_in <= std_logic_vector(to_unsigned(i / 4, 8));
+--          SpriteRAM_Data_in <= X"00";
+        when 2 =>
+          SpriteRAM_Data_in <= "11111111";
+        when 3 =>
+          SpriteRAM_Data_in <= std_logic_vector(to_unsigned(30 + ((i / 4) mod 2) * 8 , 8));
+        when others =>
+      end case;
+      wait for CLK_period * 4;
+    end loop;
+    SpriteRAM_WriteEnable <= '0';
+        
     wait;
   end process;
   
@@ -173,8 +182,13 @@ BEGIN
   variable fbaddr : integer;
   begin
     if rising_edge(clk) and CE = '1' then
-      fbaddr := HPOS + VPOS * 341;
-      fb_ram(fbaddr) <= "00" & std_logic_vector(SpriteColor);
+      fbaddr := (HPOS + 42) + VPOS * 340;
+        fb_ram(fbaddr) <= "00" & std_logic_vector(SpriteColor);
+
+	-- Draw a border for the visible part of the screen
+        if HPOS = -1 or HPOS = 256 or VPOS = 240 then
+          fb_ram(fbaddr) <= "111010";
+        end if;
     end if;
   end process;
   
@@ -183,7 +197,7 @@ BEGIN
     variable my_line : LINE;
     variable my_output_line : LINE;
   begin
-    if rising_edge(clk) and HPOS = 298 and VPOS = 261 then
+    if rising_edge(clk) and HPOS = 297 and VPOS = 260 then
       write(my_line, string'("writing file"));
       writeline(output, my_line);
       write(my_output, fb_ram);

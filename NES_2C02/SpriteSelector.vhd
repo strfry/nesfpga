@@ -99,7 +99,7 @@ begin
   end process;
   
   -- The Line Buffer contains up to 8 sprites, select the first one with non-zero color
-  PIXEL_MUX : process (SpriteLineBuffer)
+  PIXEL_MUX : process (SpriteLineBuffer, HPOS)
   variable sprite : LineBufferEntry;
   variable xpos : integer;
   variable patternColor : unsigned(1 downto 0);
@@ -121,6 +121,10 @@ begin
         end if;
       end if;
     end loop;
+
+    if VPOS > 230 and HPOS > 0 and HPOS < 255 then
+      SpriteColor <= to_unsigned(HPOS / 16, 4);
+    end if;
   end process;
   
   
@@ -180,43 +184,41 @@ begin
 	variable currentSprite : integer;
 	variable patternAddress : unsigned(13 downto 0);
 	begin
---	  if rising_edge(clk) and CE = '1' then
---	    if HPOS >= 0 and HPOS < 256 then
---		    for i in 7 downto 0 loop
---		      if SpriteLineBuffer(i).x > 0 then
---		        SpriteLineBuffer(i).x <= SpriteLineBuffer(i).x - 1;
---		      else
---		        SpriteLineBuffer(i).pattern0 <= SpriteLineBuffer(i).pattern0 srl 1;
---		        SpriteLineBuffer(i).pattern1 <= SpriteLineBuffer(i).pattern1 srl 1;
---		      end if;
---		    end loop;
---		  elsif HPOS >= 256 and HPOS < 288 then
---		    currentSprite := (HPOS - 256) / 4;
---		    patternAddress := "0" & PatternTableAddressOffset &
---		      TempLineBuffer(currentSprite).patternIndex & TempLineBuffer(currentSprite).ydiff(3 downto 0);
---		      
---		    if currentSprite < NumSpritesFound then
---		      case HPOS mod 4 is
---		        when 0 =>
---		          VRAM_Address <= patternAddress;
---		        when 1 => 
---		          SpriteLineBuffer(currentSprite).pattern0 <= unsigned(VRAM_Data);
---		          VRAM_Address <= patternAddress + 8;
---		        when 2 =>
---		          SpriteLineBuffer(currentSprite).pattern1 <= unsigned(VRAM_Data);
---		          SpriteLineBuffer(currentSprite).x <= TempLineBuffer(currentSprite).x;
---		          SpriteLineBuffer(currentSprite).attr <= TempLineBuffer(currentSprite).attr;
---		          SpriteLineBuffer(currentSprite).primary <= TempLineBuffer(currentSprite).primary;
---		          SpriteLineBuffer(currentSprite).foreground <= TempLineBuffer(currentSprite).foreground;
---		          
---		          SpriteLineBuffer(currentSprite).pattern0 <= X"FF";
---		          SpriteLineBuffer(currentSprite).pattern1 <= X"FF";
---		        when others =>
---		      end case;
---		    end if;
---		    		  
---		  end if;
---	    
---    end if;
+	  if rising_edge(clk) and CE = '1' then
+	    if HPOS >= 0 and HPOS < 256 then
+		    for i in 7 downto 0 loop
+		      if SpriteLineBuffer(i).x > 0 then
+		        SpriteLineBuffer(i).x <= SpriteLineBuffer(i).x - 1;
+		      else
+		        SpriteLineBuffer(i).pattern0 <= SpriteLineBuffer(i).pattern0 srl 1;
+		        SpriteLineBuffer(i).pattern1 <= SpriteLineBuffer(i).pattern1 srl 1;
+		      end if;
+		    end loop;
+		  elsif HPOS >= 256 and HPOS < 288 then
+		    currentSprite := (HPOS - 256) / 4;
+		    patternAddress := "0" & PatternTableAddressOffset &
+		      TempLineBuffer(currentSprite).patternIndex & (8 - TempLineBuffer(currentSprite).ydiff(3 downto 0));
+		      
+		    if currentSprite < NumSpritesFound then
+		      case HPOS mod 4 is
+		        when 0 =>
+		          VRAM_Address <= patternAddress;
+		        when 1 => 
+		          SpriteLineBuffer(currentSprite).pattern0 <= unsigned(VRAM_Data);
+		          VRAM_Address <= patternAddress + 8;
+		        when 2 =>
+		          SpriteLineBuffer(currentSprite).pattern1 <= unsigned(VRAM_Data);
+		          SpriteLineBuffer(currentSprite).x <= TempLineBuffer(currentSprite).x;
+		          SpriteLineBuffer(currentSprite).attr <= TempLineBuffer(currentSprite).attr;
+		          SpriteLineBuffer(currentSprite).primary <= TempLineBuffer(currentSprite).primary;
+		          SpriteLineBuffer(currentSprite).foreground <= TempLineBuffer(currentSprite).foreground;
+		          
+		        when others =>
+		      end case;
+		    end if;
+		    		  
+		  end if;
+	    
+    end if;
   end process;
 end arch;
