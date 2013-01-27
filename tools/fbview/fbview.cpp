@@ -5,8 +5,8 @@
 
 //#undef main
 
-#define WIDTH 320
-#define HEIGHT 340
+#define WIDTH 340
+#define HEIGHT 261
 
 int color_palette[] = {
 0x7C7C7C, 0x0000FC, 0x0000BC, 0x4428BC, 0x940084, 0xA80020, 0xA81000, 0x881400, 
@@ -24,16 +24,32 @@ std::vector<SDL_Surface*> g_Frames;
 
 int g_currentFrame = 0;
 
+
+// GHDL seems to have the same binary format as ModelSim, but with an additional header
+void probe_header(FILE* file)
+{
+  char buf[64];
+  int readBytes = fread(buf, 1, sizeof buf, file);
+  buf[readBytes] = 0;
+
+  if (strstr(buf, "GHDL-BINARY-FILE")) {
+    char* idx = (char*)memrchr(buf, '\n', readBytes);
+    fseek(file, SEEK_SET, idx - buf);
+  }
+}
+
 void load_frames(const char* filename)
 {
   FILE* file = fopen(filename, "rb");
+  
+  probe_header(file);
   
   if (!file) {
     perror("fopen");
     exit(1);
   }
 
-  int img_len = 256 * 256 * 6;
+  int img_len = WIDTH * HEIGHT * 6;
   
   char img_buf[img_len];
   
@@ -43,14 +59,14 @@ void load_frames(const char* filename)
      SDL_Surface* surface = SDL_CreateRGBSurface(SDL_SWSURFACE, WIDTH, HEIGHT, 32, 0xff0000, 0xff00, 0xff, 0);
      SDL_LockSurface(surface);
 
-     for (int y = 0; y < 256; y++) {
-       for (int x = 0; x < 256; x++) {
+     for (int y = 0; y < HEIGHT; y++) {
+       for (int x = 0; x < WIDTH; x++) {
        int pixelValue = 0;
          for (int bit = 0; bit < 6; bit++) {
-           switch (img_buf[(y * 256 + x) * 6 + bit]) {
-             case 0:
+           switch (img_buf[(y * WIDTH + x) * 6 + bit]) {
+//             case 0:
 		// TODO: Handle Unknown/Invalid bit value
-               break;
+//               break;
              case 2:
                // Zero - do nothing
                break;
