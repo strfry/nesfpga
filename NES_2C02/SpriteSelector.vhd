@@ -15,7 +15,7 @@ entity SpriteSelector is
 		PatternTableAddressOffset : in std_logic;
     
     -- Selector output         
-    SpriteColor : out unsigned(3 downto 0); -- Current Sprite Palette Index, after selecting         
+    SpriteColor : out unsigned(3 downto 0); -- Palette index of sprite at current VPOS/HPOS pixel position
     SpriteForegroundPriority : out std_logic; -- When '0', Sprite is only drawn when background is transparent ("00" Color)
     SpriteIsPrimary : out std_logic; -- Is '1' when the current output results from object #0, used for collision detection flag
         
@@ -116,6 +116,8 @@ begin
         
         if patternColor /= "00" then
           SpriteColor <= unsigned(sprite.attr & patternColor);
+          SpriteColor <= unsigned("10" & patternColor);
+
           SpriteForegroundPriority <= sprite.foreground;
           SpriteIsPrimary <= sprite.primary;
         end if;

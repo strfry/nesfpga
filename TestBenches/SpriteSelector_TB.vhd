@@ -157,18 +157,18 @@ BEGIN
 
     SpriteRAM_WriteEnable <= '1';
 
-    for i in 0 to 63 loop
+    for i in 0 to 127 loop
       SpriteRAM_Address	<= to_unsigned(i, 8);
       case i mod 4 is
         when 0 =>
-          SpriteRAM_Data_in <= std_logic_vector(to_unsigned(40 + (i / 8) * 8, 8));
+          SpriteRAM_Data_in <= std_logic_vector(to_unsigned(10 + (i / 8) * 8, 8));
         when 1 =>
           SpriteRAM_Data_in <= std_logic_vector(to_unsigned(i / 4, 8));
 --          SpriteRAM_Data_in <= X"00";
         when 2 =>
           SpriteRAM_Data_in <= "11111111";
         when 3 =>
-          SpriteRAM_Data_in <= std_logic_vector(to_unsigned(30 + ((i / 4) mod 2) * 8 , 8));
+          SpriteRAM_Data_in <= std_logic_vector(to_unsigned(30 + ((i / 4 + 1) mod 2) * 8 , 8));
         when others =>
       end case;
       wait for CLK_period * 4;
