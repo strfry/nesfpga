@@ -28,16 +28,17 @@ int g_currentFrame = 0;
 // GHDL seems to have the same binary format as ModelSim, but with an additional header
 void probe_header(FILE* file)
 {
-  char buf[64];
-  int readBytes = fread(buf, 1, sizeof buf, file);
-  buf[readBytes] = 0;
+  char* line = 0;
+  size_t len;
+  getline(&line, &len, file);
 
-  rewind(file);
-
-  if (strstr(buf, "GHDL-BINARY-FILE")) {
-    char* idx = (char*)memrchr(buf, '\n', readBytes);
-    fseek(file, SEEK_SET, idx - buf);
+  if (line && strstr(line, "GHDL-BINARY-FILE")) {
+    getline(&line, &len, file);
+  } else {
+    rewind(file);
   }
+
+  free(line);
 }
 
 void load_frames(const char* filename)
@@ -50,7 +51,6 @@ void load_frames(const char* filename)
   }
 
   probe_header(file);
-//  fseek(file, SEEK_CUR, -5);
 
   int img_len = WIDTH * HEIGHT * 6;
   
