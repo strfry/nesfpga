@@ -1,4 +1,4 @@
-
+ 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -42,17 +42,23 @@ architecture arch of SpriteSelector is
   -- RAM(SpriteNum * 4 + 2) = (7 => Y-Flip, 6 => X-Flip, 5 => BGPriority, (1 downto 0) => ColorPalette)
   -- RAM(SpriteNum * 4 + 3) = X position
   
+    
   -- Each scanline, while memory access is reserved to the Background Tile Pipeline, the Sprite Selector
   -- selects up to 8 sprites from the OAM to be drawn in the next scanline and stores the necessary
   -- information in the "sprite temporary buffer".
-  
+  --
   -- After this period, the Sprite Selector gains read access to the PPU Memory bus and reads the
   -- corresponding tile patterns and writes them to the "secondary" OAM.
   
+  
+  -- The TempLineBuffer stores the result of the sprite evaluation phase. The MEMFETCH process
+  -- reads 2 bytes from the Pattern Table, optionally flips them, and writes them to the Secondary OAM
+  -- along with the remaining attributes.
+  
   type TempLineBufferEntry is record
-		x : unsigned(7 downto 0);
-		ydiff : unsigned(7 downto 0);
 		patternIndex : unsigned(7 downto 0);
+		ydiff : unsigned(7 downto 0);
+		x : unsigned(7 downto 0);
 		attr : unsigned(1 downto 0);
 		xflip : std_logic;		
 		foreground : std_logic;
@@ -81,7 +87,7 @@ architecture arch of SpriteSelector is
 	   4 => X"30", 5 => X"33", 6 => "11111111", 7 => X"50",
 	   8 => X"50", 9 => X"25", 10 => "11111111", 11 => X"50",
 	   12 => X"70", 13 => X"55", 14 => "11111111", 16 => X"30",
-	   others => "00000000");
+	   others => X"FF");
 	
 	signal NumSpritesFound : integer range 0 to 8;
    
@@ -144,9 +150,12 @@ begin
 		  
 			if VPOS = 0 and HPOS = 0 then
 			  SpriteOverflowFlag <= '0';
-			elsif HPOS = -1 then
+			end if;
+			
+			if HPOS = -1 then
 				NumSpritesFound <= 0;
-        TempLineBuffer <= (others => (xflip => '0', primary => '0', foreground => '0', attr => "00", others => "00000000"));
+        TempLineBuffer <= (others => (xflip => '0', primary => '0', foreground => '0', attr => "00", others => X"FF"));
+			  CurrentSpriteIndex := 0;
 			elsif HPOS >= 0 and HPOS < 256 and VPOS >= 0 and VPOS < 240 and NumSpritesFound < 8 then
 			  -- Sprite Lookup phase (8 out of 64 selection)
 			  
@@ -154,7 +163,7 @@ begin
 			  
 			  case HPOS mod 4 is
 			    when 0 =>
-			      TempLineBuffer(NumSpritesFound).ydiff <= unsigned(SpriteRAM(CurrentSpriteIndex * 4)) - VPOS;
+			      TempLineBuffer(NumSpritesFound).ydiff <= VPOS - unsigned(SpriteRAM(CurrentSpriteIndex * 4));
 			    when 1 =>
 			      if TempLineBuffer(NumSpritesFound).ydiff < 8 then
 			        TempLineBuffer(NumSpritesFound).patternIndex <= unsigned(SpriteRAM(CurrentSpriteIndex * 4 + 1));
@@ -199,7 +208,7 @@ begin
 		  elsif HPOS >= 256 and HPOS < 288 then
 		    currentSprite := (HPOS - 256) / 4;
 		    patternAddress := "0" & PatternTableAddressOffset &
-		      TempLineBuffer(currentSprite).patternIndex & (8 - TempLineBuffer(currentSprite).ydiff(3 downto 0));
+		      TempLineBuffer(currentSprite).patternIndex & (TempLineBuffer(currentSprite).ydiff(3 downto 0));
 		      
 		    if currentSprite < NumSpritesFound then
 		      case HPOS mod 4 is
