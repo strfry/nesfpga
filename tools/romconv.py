@@ -20,7 +20,7 @@ def write_dat(name, bytes):
 		fo.write('{0:08b}\n'.format(ord(byte)))
 		
 
-write_coe(basename + "_prg.coe", 32768)
+write_dat(basename + "_prg.dat", 32768)
 #write_coe(basename + "_chr.coe", 8192)
 
 write_dat(basename + "_chr.dat", 8192)

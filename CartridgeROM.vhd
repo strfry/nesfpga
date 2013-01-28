@@ -29,7 +29,7 @@ architecture arch of CartridgeROM is
 
   type CHRRAMType is array(0 to 8191) of bit_vector(7 downto 0);
 
-  impure function InitRamFromFile (RamFileName : in string) return CHRRAMType is
+  impure function InitCHRRAMFromFile (RamFileName : in string) return CHRRAMType is
     FILE RamFile : text is in RamFileName;
     variable RamFileLine : line;
     variable RAM : CHRRAMType;
@@ -41,14 +41,32 @@ architecture arch of CartridgeROM is
     return RAM;
   end function;
 
-  signal CHRRAM : CHRRAMType := InitRamFromFile("roms/smb_chr.dat");
+  signal CHRRAM : CHRRAMType := InitCHRRAMFromFile("roms/smb_chr.dat");
+  
+  type PRGRAMType is array(0 to 32767) of bit_vector(7 downto 0);
+
+  impure function InitPRGRAMFromFile (RamFileName : in string) return PRGRAMType is
+    FILE RamFile : text is in RamFileName;
+    variable RamFileLine : line;
+    variable RAM : PRGRAMType;
+  begin
+    for I in PRGRAMType'range loop
+      readline (RamFile, RamFileLine);
+      read (RamFileLine, RAM(I));
+    end loop;
+    return RAM;
+  end function;
+
+  signal PRGRAM : PRGRAMType := InitPRGRAMFromFile("roms/smb_prg.dat");
 
 begin
 
   process (clk)
   begin
     if rising_edge(clk) then
-      CHR_Data <= to_stdlogicvector(CHRRAM(to_integer(CHR_Address)));
+      CHR_Data <= to_stdlogicvector(CHRRAM(to_integer(CHR_Address(12 downto 0))));
+      
+      PRG_Data <= to_stdlogicvector(PRGRAM(to_integer(unsigned(PRG_Address))));
     end if;
   end process;
 
