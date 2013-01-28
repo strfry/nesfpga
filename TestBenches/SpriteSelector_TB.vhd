@@ -161,7 +161,7 @@ BEGIN
       SpriteRAM_Address	<= to_unsigned(i, 8);
       case i mod 4 is
         when 0 =>
-          SpriteRAM_Data_in <= std_logic_vector(to_unsigned(10 + (i / 8) * 8, 8));
+          SpriteRAM_Data_in <= std_logic_vector(to_unsigned(10 + (i / 8) * 16, 8));
         when 1 =>
           SpriteRAM_Data_in <= std_logic_vector(to_unsigned(i / 4, 8));
 --          SpriteRAM_Data_in <= X"00";
@@ -197,7 +197,7 @@ BEGIN
     variable my_line : LINE;
     variable my_output_line : LINE;
   begin
-    if rising_edge(clk) and HPOS = 297 and VPOS = 260 then
+    if rising_edge(clk) and CE = '1' and HPOS = 297 and VPOS = 260 then
       write(my_line, string'("writing file"));
       writeline(output, my_line);
       write(my_output, fb_ram);
