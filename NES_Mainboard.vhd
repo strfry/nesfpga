@@ -9,7 +9,7 @@ entity NES_Mainboard is
         rstn : in std_logic;
         
         -- Framebuffer output
-        FB_Address : out std_logic_vector(15 downto 0); -- linear index in 256x240 pixel framebuffer
+        FB_Address : out unsigned(15 downto 0); -- linear index in 256x240 pixel framebuffer
         FB_Color : out std_logic_vector(5 downto 0); -- Palette index of current color
         FB_DE : out std_logic;    -- True when PPU is writing to the framebuffer
         
