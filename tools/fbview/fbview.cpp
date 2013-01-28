@@ -32,6 +32,8 @@ void probe_header(FILE* file)
   int readBytes = fread(buf, 1, sizeof buf, file);
   buf[readBytes] = 0;
 
+  rewind(file);
+
   if (strstr(buf, "GHDL-BINARY-FILE")) {
     char* idx = (char*)memrchr(buf, '\n', readBytes);
     fseek(file, SEEK_SET, idx - buf);
@@ -42,12 +44,13 @@ void load_frames(const char* filename)
 {
   FILE* file = fopen(filename, "rb");
   
-  probe_header(file);
-  
   if (!file) {
     perror("fopen");
     exit(1);
   }
+
+  probe_header(file);
+//  fseek(file, SEEK_CUR, -5);
 
   int img_len = WIDTH * HEIGHT * 6;
   
