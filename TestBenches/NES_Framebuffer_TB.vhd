@@ -14,7 +14,7 @@ architecture arch of NES_Framebuffer_TB is
     rstn : in std_logic;
         
     -- Framebuffer output
-    FB_Address : out std_logic_vector(15 downto 0); -- linear index in 256x240 pixel framebuffer
+    FB_Address : out unsigned(15 downto 0); -- linear index in 256x240 pixel framebuffer
     FB_Color : out std_logic_vector(5 downto 0); -- Palette index of current color
     FB_DE : out std_logic;    -- True when PPU is writing to the framebuffer
         
@@ -38,7 +38,7 @@ architecture arch of NES_Framebuffer_TB is
 	signal NES_Clock : std_logic;
 	signal NES_Reset : std_logic;
 
-	signal FB_Address : std_logic_vector(15 downto 0);
+	signal FB_Address : unsigned(15 downto 0);
 	signal FB_Color : std_logic_vector(5 downto 0);
 	signal FB_DE : std_logic;	
 	
@@ -46,7 +46,8 @@ architecture arch of NES_Framebuffer_TB is
 	signal Controller1_Clock : std_logic;
 	signal Controller2_Clock : std_logic;
 	
-  type fb_ram_type is array(65535 downto 0) of std_logic_vector(5 downto 0);
+	constant fb_size : integer :=	340 * 261 - 1; 
+  type fb_ram_type is array(fb_size downto 0) of std_logic_vector(5 downto 0);
   type FramebufferFileType is file of fb_ram_type;
 
 	signal fb_ram : fb_ram_type := (others => "101010");
@@ -97,10 +98,18 @@ begin
   end process;
   
   FB_WRITE_proc : process (NES_Clock) 
+  variable v, h : integer;
   begin
     if rising_edge(Nes_Clock) then
       if FB_DE = '1' then
-        fb_ram(to_integer(unsigned(FB_Address))) <= FB_Color;
+        -- fb_ram stores the full 340x261 range, but the PPU only outputs
+        -- the visible range 256x240. For this reason, we recompute the address
+        -- here:
+        
+        v := to_integer(FB_Address / 256);
+        h := to_integer(FB_Address mod 256) + 42;
+        
+        fb_ram(v * 340 + h) <= FB_Color;
       end if;
     end if;
   end process;

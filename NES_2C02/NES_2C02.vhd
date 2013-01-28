@@ -29,9 +29,10 @@ entity NES_2C02 is
         VBlank_n : out std_logic; -- Tied to the CPU's Non-Maskable Interrupt (NMI)     
         
         -- Framebuffer output
-        FB_Address : out std_logic_vector(15 downto 0); -- linear index in 256x240 pixel framebuffer
+        FB_Address : out unsigned(15 downto 0); -- linear index in 256x240 pixel framebuffer
         FB_Color : out std_logic_vector(5 downto 0); -- Palette index of current color
         FB_DE : out std_logic    -- True when PPU is writing to the framebuffer
+
 	);
 end NES_2C02;
 
@@ -89,10 +90,11 @@ end component;
 	signal HSYNC_cnt : integer range 0 to 340 := 0;
 	signal VSYNC_cnt : integer range 0 to 261 := 0;
 	
-	-- Derived counters with more useful value range
-	signal HPOS : integer range -42 to 298; -- negative values mark the HBlank period
-	signal VPOS : integer range 0 to 261; -- 240 to 261 is the VBlank period
-		
+	-- Internal H/V Counters with adjusted ranges
+	signal HPOS : integer range -42 to 298;
+	signal VPOS : integer range 0 to 261;
+	
+
 	signal CE_cnt : unsigned(1 downto 0) := "00";
 	signal CE : std_logic;
 	
@@ -186,9 +188,6 @@ begin
 	HPOS <= HSYNC_cnt - 42;
 	VPOS <= VSYNC_cnt;
 	
---	HPOS_u <= to_unsigned(HPOS, 9);
---	VPOS_u <= to_unsigned(VPOS, 9);
-	
 	CE <= '1' when CE_cnt = 0 else '0';
 	
 	process (clk)
@@ -218,16 +217,18 @@ begin
 	variable color : unsigned(3 downto 0);
 	begin
 		if rising_edge(clk) and CE = '1' then
+		  FB_DE <= '0';
 			if HPOS >= 0 and HPOS < 256 and VPOS >= 0 and VPOS < 240 then
-				FB_DE <= '1';
-				FB_Address <= std_logic_vector(to_unsigned(VPOS * 256 + HPOS, FB_Address'length));
-				
+			  
+			  FB_DE <= '1';
+			  FB_Address <= to_unsigned(HPOS + VPOS * 256, FB_Address'length);
+		
 				color := TileColor;
 				if (SpriteForegroundPriority = '1' or TileColor(1 downto 0) = "00") and SpriteColor(1 downto 0) /= "00" then
 				  color := SpriteColor;
 				end if;
 				
-				FB_Color <= std_logic_vector(PaletteRAM(to_integer(color) mod 32));
+				FB_Color <= PaletteRAM(to_integer(color) mod 32);
 
 				
 				--if SpritesFound > 0 then
@@ -236,15 +237,11 @@ begin
 				
 				
 				if VPOS >= 230 then
-					FB_Color <= std_logic_vector(PaletteRAM(HPOS / 8));
-				end if;
-				
-				if HPOS < 0 or HPOS >= 256 or VPOS < 0 or VPOS >= 240 then
-					FB_Color <= "000000";
+					FB_Color <= PaletteRAM(HPOS / 8);
 				end if;
 				
 			else
-				FB_DE <= '0';
+			  FB_Color <= "000000";
 			end if;
 		end if;
 	end process;

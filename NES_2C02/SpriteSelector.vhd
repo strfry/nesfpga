@@ -129,10 +129,6 @@ begin
         end if;
       end if;
     end loop;
-
-    if VPOS > 230 and HPOS > 0 and HPOS < 255 then
-      SpriteColor <= to_unsigned(HPOS / 16, 4);
-    end if;
   end process;
   
   

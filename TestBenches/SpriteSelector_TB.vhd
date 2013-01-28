@@ -161,7 +161,7 @@ BEGIN
       SpriteRAM_Address	<= to_unsigned(i, 8);
       case i mod 4 is
         when 0 =>
-          SpriteRAM_Data_in <= std_logic_vector(to_unsigned(10 + (i / 8) * 16, 8));
+          SpriteRAM_Data_in <= std_logic_vector(to_unsigned(10 + (i / 8) * 8, 8));
         when 1 =>
           SpriteRAM_Data_in <= std_logic_vector(to_unsigned(i / 4, 8));
 --          SpriteRAM_Data_in <= X"00";
