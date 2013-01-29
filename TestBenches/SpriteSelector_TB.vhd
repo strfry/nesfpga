@@ -159,6 +159,7 @@ BEGIN
 
     for i in 0 to 127 loop
       SpriteRAM_Address	<= to_unsigned(i, 8);
+         
       case i mod 4 is
         when 0 =>
           SpriteRAM_Data_in <= std_logic_vector(to_unsigned(10 + (i / 8) * 8, 8));
@@ -171,6 +172,18 @@ BEGIN
           SpriteRAM_Data_in <= std_logic_vector(to_unsigned(30 + ((i / 4 + 1) mod 2) * 8 , 8));
         when others =>
       end case;
+      
+      -- Also write the primary sprite used by Super Mario Brothers for synchronization purposes
+      if i = 0 then
+        SpriteRAM_Data_in <= X"18";
+      elsif i = 1 then
+        SpriteRAM_Data_in <= X"FF";
+      elsif i = 2 then
+        SpriteRAM_Data_in <= X"23";
+      elsif i = 3 then
+        SpriteRAM_Data_in <= X"58";
+      end if;
+      
       wait for CLK_period * 4;
     end loop;
     SpriteRAM_WriteEnable <= '0';
