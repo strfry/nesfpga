@@ -77,7 +77,7 @@ void load_frames(const char* filename)
                pixelValue += (1 << (5 - bit));
                break;
              default:
-               printf("Unknown bit value %x\n", img_buf[(y * 256 + x) * 6 + bit]);
+               printf("Unknown bit value %x\n", img_buf[(y * WIDTH + x) * 6 + bit]);
            }
          }
 //         printf("Computed Pixel Value %x\n", pixelValue);
