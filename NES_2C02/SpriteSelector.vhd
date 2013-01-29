@@ -65,6 +65,15 @@ architecture arch of SpriteSelector is
 		primary : std_logic;
   end record;
   
+  constant TempLineBufferDefault : TempLineBufferEntry := (
+    patternIndex => X"00", ydiff => X"FF", x => X"00",
+    attr => "00", others => '0'
+  );
+  
+	type TempLineBufferType is array(7 downto 0) of TempLineBufferEntry;
+  signal TempLineBuffer : TempLineBufferType := (others => TempLineBufferDefault);
+    
+  
   -- This Datatype	corresponds to the "secondary OAM"
 	type LineBufferEntry is record
 		x : unsigned(7 downto 0);
@@ -74,12 +83,15 @@ architecture arch of SpriteSelector is
 		foreground : std_logic;
 		primary : std_logic;
 	end record;
+  
+  constant LineBufferDefault : LineBufferEntry := (
+    x => X"00", pattern0 => X"00", pattern1 => X"00",
+    attr => "00", foreground => '0', primary => '0'
+  );
 	
 	type LineBufferType is array(7 downto 0) of LineBufferEntry;
-	signal SpriteLineBuffer : LineBufferType := (others => (attr => "00", foreground => '0', primary => '0', others => "00000000"));
+	signal SpriteLineBuffer : LineBufferType := (others => LineBufferDefault);
 	
-	type TempLineBufferType is array(7 downto 0) of TempLineBufferEntry;
-	signal TempLineBuffer : TempLineBufferType := (others => (attr => "00", foreground => '0', xflip => '0', primary => '0', others => "00000000"));
 	
 	type SpriteRAMType is array(255 downto 0) of std_logic_vector(7 downto 0);
 	signal SpriteRAM : SpriteRAMType := (
@@ -89,7 +101,7 @@ architecture arch of SpriteSelector is
 	   12 => X"70", 13 => X"55", 14 => "11111111", 16 => X"30",
 	   others => X"FF");
 	
-	signal NumSpritesFound : integer range 0 to 8;
+	signal NumSpritesFound : integer range 0 to 8 := 0;
    
 begin
   
@@ -150,7 +162,7 @@ begin
 			
 			if HPOS = -1 then
 				NumSpritesFound <= 0;
-        TempLineBuffer <= (others => (xflip => '0', primary => '0', foreground => '0', attr => "00", others => X"FF"));
+        TempLineBuffer <= (others => TempLineBufferDefault);
 			  CurrentSpriteIndex := 0;
 			elsif HPOS >= 0 and HPOS < 256 and VPOS >= 0 and VPOS < 240 and NumSpritesFound < 8 then
 			  -- Sprite Lookup phase (8 out of 64 selection)
