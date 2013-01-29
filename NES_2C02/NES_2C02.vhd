@@ -214,7 +214,7 @@ begin
 	end process;
 	
 	process (clk)
-	variable color : unsigned(3 downto 0);
+	variable color : integer;
 	begin
 		if rising_edge(clk) and CE = '1' then
 		  FB_DE <= '0';
@@ -223,12 +223,15 @@ begin
 			  FB_DE <= '1';
 			  FB_Address <= to_unsigned(HPOS + VPOS * 256, FB_Address'length);
 		
-				color := TileColor;
 				if (SpriteForegroundPriority = '1' or TileColor(1 downto 0) = "00") and SpriteColor(1 downto 0) /= "00" then
-				  color := SpriteColor;
+				  color := to_integer(SpriteColor) + 16;
+				elsif TileColor(1 downto 0) /= "00" then
+				  color := to_integer(TileColor);
+				else
+				  color := 16;
 				end if;
 				
-				FB_Color <= PaletteRAM(to_integer(color) mod 32);
+				FB_Color <= PaletteRAM(color);
 
 				
 				--if SpritesFound > 0 then
@@ -256,6 +259,11 @@ begin
 				elsif HPOS >= 0 and HPOS < 3 and VPOS = 20 then -- End VBlank Period
 					VBlankFlag <= '0';
 					HitSpriteFlag <= '0';
+				end if;
+				
+				-- Hack: Increment sprite RAM address after write here, to avoid off-by-one condition
+				if SpriteRAM_WriteEnable = '1' then
+						SpriteRAM_Address <= SpriteRAM_Address + 1;
 				end if;
 								
     		  CPUVRAM_Write <= '0';
@@ -292,7 +300,6 @@ begin
 					elsif Address = "100" then
 						SpriteRAM_Data_in <= Data_in_d;
 						SpriteRAM_WriteEnable <= '1';
-						SpriteRAM_Address <= SpriteRAM_Address + 1;
 				  elsif Address = "101" then
 						if CPUPortDir = '1' then
 						  if unsigned(Data_in_d) <= 239 then
@@ -347,7 +354,7 @@ begin
 	end process;
 	
 	
-	PPU_ADDRESS_MUXER : process (CPUVRAM_Read, CPUVRAM_Write, CPUVRAM_Address, TileVRAM_Address)
+	PPU_ADDRESS_MUXER : process (CPUVRAM_Read, CPUVRAM_Write, CPUVRAM_Address, TileVRAM_Address, HPOS)
 	begin
 		if CPUVRAM_Read = '1' then
       PPU_Address <= CPUVRAM_Address;

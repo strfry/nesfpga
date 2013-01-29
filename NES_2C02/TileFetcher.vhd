@@ -44,10 +44,6 @@ begin
 		
 		--attr_color := unsigned(TilePipeline(0).attr(1 downto 0));
 		TileColor <= attr_color & TilePattern1(15 - HPOS mod 8) & TilePattern0(15 - HPOS mod 8);
-		
-		if VPOS >= 210 then
-			TileColor <= to_unsigned((HPOS / 8) mod 16, 4);
-		end if;
 	end process;
 
 	PREFETCH : process(clk, rstn)
@@ -124,10 +120,6 @@ begin
 						TilePattern1 <= VRAM_Data & TilePattern1(15 downto 8);
 						TilePattern0 <= NextTilePattern0 & TilePattern0(15 downto 8);
 						TileAttribute <= NextTileAttribute & TileAttribute(15 downto 8);
-						
---						TileAttribute <= "0000000000000000";
---						TilePattern0 <= "0011001100110011";
---						TilePattern1 <= "0000111100001111";
 					when others =>
 				end case;
 			end if;
