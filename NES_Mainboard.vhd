@@ -54,6 +54,9 @@ architecture arch of NES_Mainboard is
   -- PPU Memory Bus
 	signal CHR_Address : unsigned(13 downto 0);
 	signal CHR_Data : std_logic_vector(7 downto 0);
+	
+	signal CPU_Controller1Read_N : std_logic;
+	signal CPU_Controller2Read_N : std_logic;
   
 begin
  
@@ -63,15 +66,19 @@ begin
 	-- Access Program ROM in range 0x8000 to 0xFFFF
   CPU_PRG_CS_n <= '0' when CPU_Address(15) = '1' and CPU_PHI2 = '1' else '1';
   
-  CPU_BUS_MUX : process(CPU_RW, PPU_CPU_Data, PRG_Data, CPU_PPU_CS_n, CPU_PRG_CS_n, CPU_Address)
+  -- Output inverting buffer is controlled by read access on reg $4016, e.g. Controller1Read_N
+  Controller1_Clock <= not CPU_PHI2 when CPU_Controller1Read_N = '0' else '1';
+  
+  CPU_BUS_MUX : process(CPU_RW, PPU_CPU_Data, PRG_Data, CPU_PPU_CS_n, CPU_PRG_CS_n, CPU_Address, CPU_Controller1Read_N)
   begin
     if CPU_RW = '1' then
 		  if CPU_PPU_CS_n = '0' then
 			  CPU_Data <= PPU_CPU_Data;
 			elsif	CPU_PRG_CS_n = '0' then
 				CPU_Data <= PRG_Data;
---			elsif CPU_Controller1Read_N = '0' then
---				CPU_Data <= "0000000" & Controller1_ShiftRegister(0);
+			elsif CPU_Controller1Read_N = '0' then
+				--CPU_Data <= "ZZZZZZZ" & Controller1_Data0_N;
+				CPU_Data <= "ZZZZZ" & not Controller1_Data2_N & not Controller1_Data1_N & not Controller1_Data0_N;
 			else
 				CPU_Data <= (others => 'Z');
 		  end if;
@@ -79,7 +86,7 @@ begin
 			CPU_Data <= (others => 'Z');
     end if;
   end process;
-  
+    
   
   CPU: NES_2A03
   port map (
@@ -95,8 +102,8 @@ begin
     PHI2 => CPU_PHI2,
         
     CStrobe => Controller_Strobe,
---  C1R_N => CPU_Controller1Read_N,
---  C2R_N => CPU_Controller2Read_N,
+    C1R_N => CPU_Controller1Read_N,
+    C2R_N => CPU_Controller2Read_N,
         
     A_Rectangle => open,
     A_Combined => open,
