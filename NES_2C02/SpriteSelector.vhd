@@ -59,7 +59,7 @@ architecture arch of SpriteSelector is
 		patternIndex : unsigned(7 downto 0);
 		ydiff : unsigned(7 downto 0);
 		x : unsigned(7 downto 0);
-		attr : unsigned(1 downto 0);
+		palette : unsigned(1 downto 0);
 		xflip : std_logic;		
 		foreground : std_logic;
 		primary : std_logic;
@@ -67,7 +67,7 @@ architecture arch of SpriteSelector is
   
   constant TempLineBufferDefault : TempLineBufferEntry := (
     patternIndex => X"00", ydiff => X"FF", x => X"00",
-    attr => "00", others => '0'
+    palette => "00", others => '0'
   );
   
 	type TempLineBufferType is array(7 downto 0) of TempLineBufferEntry;
@@ -79,14 +79,14 @@ architecture arch of SpriteSelector is
 		x : unsigned(7 downto 0);
 		pattern0 : unsigned(7 downto 0);
 		pattern1 : unsigned(7 downto 0);
-		attr : unsigned(1 downto 0);
+		palette : unsigned(1 downto 0);
 		foreground : std_logic;
 		primary : std_logic;
 	end record;
   
   constant LineBufferDefault : LineBufferEntry := (
     x => X"00", pattern0 => X"00", pattern1 => X"00",
-    attr => "00", foreground => '0', primary => '0'
+    palette => "00", foreground => '0', primary => '0'
   );
 	
 	type LineBufferType is array(7 downto 0) of LineBufferEntry;
@@ -102,6 +102,18 @@ architecture arch of SpriteSelector is
 	   others => X"FF");
 	
 	signal NumSpritesFound : integer range 0 to 8 := 0;
+	
+	-- reverse Function used to implement the X-Flip feature
+	function reverse(p: unsigned) return unsigned is
+    variable temp: unsigned(p'reverse_range);
+    variable result: unsigned(p'range);
+  begin
+    for i in p'range loop
+      temp(i) := p(i);
+  end loop; 
+    result := temp;
+    return result;
+  end;
    
 begin
   
@@ -130,12 +142,10 @@ begin
       sprite := SpriteLineBuffer(i);
       xpos := to_integer(sprite.x);
       if sprite.x = 0 then
-        patternColor := sprite.pattern0(0) & sprite.pattern1(0);
+        patternColor := sprite.pattern1(0) & sprite.pattern0(0);
         
         if patternColor /= "00" then
-          SpriteColor <= unsigned(sprite.attr & patternColor);
-          SpriteColor <= unsigned("10" & patternColor);
-
+          SpriteColor <= unsigned(sprite.palette & patternColor);
           SpriteForegroundPriority <= sprite.foreground;
           SpriteIsPrimary <= sprite.primary;
         end if;
@@ -143,11 +153,8 @@ begin
     end loop;
   end process;
   
-  
-  
-
     
-  	SPRITE_LOOKUP : process (clk, rstn)
+  SPRITE_LOOKUP : process (clk, rstn)
 	   variable attributeByte : std_logic_vector(7 downto 0);
 	   variable CurrentSpriteIndex : integer;
   	begin
@@ -179,7 +186,7 @@ begin
 			    when 2 =>
 			      if TempLineBuffer(NumSpritesFound).ydiff < 8 then
 			        attributeByte := SpriteRAM(CurrentSpriteIndex * 4 + 2);
-			        TempLineBuffer(NumSpritesFound).attr <= unsigned(attributeByte(1 downto 0));
+			        TempLineBuffer(NumSpritesFound).palette <= unsigned(attributeByte(1 downto 0));
 			        TempLineBuffer(NumSpritesFound).foreground <= attributeByte(5);
   			        if CurrentSpriteIndex = 0 then
   			          TempLineBuffer(NumSpritesFound).primary <= '1';
@@ -202,6 +209,7 @@ begin
 	SPRITE_MEMFETCH : process (clk)
 	variable currentSprite : integer;
 	variable patternAddress : unsigned(13 downto 0);
+	variable fetchedByte : unsigned(7 downto 0);
 	begin
 	  if rising_edge(clk) and CE = '1' then
 	    if HPOS >= 0 and HPOS < 256 then
@@ -223,12 +231,25 @@ begin
 		        when 0 =>
 		          VRAM_Address <= patternAddress;
 		        when 1 => 
-		          SpriteLineBuffer(currentSprite).pattern0 <= unsigned(VRAM_Data);
+		          fetchedByte := unsigned(VRAM_Data);
+		          if TempLineBuffer(currentSprite).xflip = '0' then
+		            fetchedByte := reverse(fetchedByte);
+		          end if;
+		          
+		          SpriteLineBuffer(currentSprite).pattern0 <= fetchedByte;
+		          
 		          VRAM_Address <= patternAddress + 8;
-		        when 2 =>
-		          SpriteLineBuffer(currentSprite).pattern1 <= unsigned(VRAM_Data);
+		        when 2 =>		          
+		          fetchedByte := unsigned(VRAM_Data);
+		          if TempLineBuffer(currentSprite).xflip = '0' then
+		            fetchedByte := reverse(fetchedByte);
+		          end if;
+		          
+		          SpriteLineBuffer(currentSprite).pattern1 <= fetchedByte;
+		          
+		          
 		          SpriteLineBuffer(currentSprite).x <= TempLineBuffer(currentSprite).x;
-		          SpriteLineBuffer(currentSprite).attr <= TempLineBuffer(currentSprite).attr;
+		          SpriteLineBuffer(currentSprite).palette <= TempLineBuffer(currentSprite).palette;
 		          SpriteLineBuffer(currentSprite).primary <= TempLineBuffer(currentSprite).primary;
 		          SpriteLineBuffer(currentSprite).foreground <= TempLineBuffer(currentSprite).foreground;
 		          
