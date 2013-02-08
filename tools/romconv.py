@@ -1,10 +1,16 @@
+#!/usr/bin/env python
+
 import sys
 
 filename = sys.argv[1]
 basename = filename.split(".")[0]
 
 f = file(filename)
-f.read(16)
+header = f.read(4)
+assert(header == "NES\x1a")
+prg_size = ord(f.read(1))
+chr_size = ord(f.read(1))
+f.read(10)
 
 def write_coe(name, bytes):
 	fo = file(name, "w")
@@ -20,7 +26,7 @@ def write_dat(name, bytes):
 		fo.write('{0:08b}\n'.format(ord(byte)))
 		
 
-write_dat(basename + "_prg.dat", 32768)
-#write_coe(basename + "_chr.coe", 8192)
+write_dat(basename + "_prg.dat", 16384 * prg_size)
+#write_coe(basename + "_chr.coe", 8192 * chr_size)
 
-write_dat(basename + "_chr.dat", 8192)
+write_dat(basename + "_chr.dat", 8192 * chr_size)
