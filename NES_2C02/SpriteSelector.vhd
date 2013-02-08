@@ -246,8 +246,6 @@ begin
 		          end if;
 		          
 		          SpriteLineBuffer(currentSprite).pattern1 <= fetchedByte;
-		          
-		          
 		          SpriteLineBuffer(currentSprite).x <= TempLineBuffer(currentSprite).x;
 		          SpriteLineBuffer(currentSprite).palette <= TempLineBuffer(currentSprite).palette;
 		          SpriteLineBuffer(currentSprite).primary <= TempLineBuffer(currentSprite).primary;

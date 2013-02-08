@@ -60,12 +60,8 @@ begin
 		if rstn = '0' then
 			VRAM_Address <= (others => '0');
 		elsif rising_edge(clk) and CE = '1' then			
-			Prefetch_XPOS := (HPOS + 16 + to_integer(HorizontalScrollOffset)) mod 256;
-			if HPOS > 240 then
-				Prefetch_YPOS := VPOS + 1;
-			else 
-				Prefetch_YPOS := VPOS;
-			end if;
+			Prefetch_XPOS := (HPOS + 8 + to_integer(HorizontalScrollOffset)) mod 256;
+      Prefetch_YPOS := VPOS;
 			
 			Prefetch_YPOS := (Prefetch_YPOS + to_integer(VerticalScrollOffset)) mod 256;
 			
@@ -86,12 +82,9 @@ begin
 				NametableBaseAddress := NametableBaseAddress + 2048;
 			end if;
 			
-			address := 0;
-			
-			--PPU_Address <= (others => '0');
 			
 --			if HPOS >= -15 and HPOS < 240 and VPOS >= -1 and VPOS < 240 then
-			if HPOS >= -15 and HPOS < 240 and VPOS >= -1 and VPOS < 240 then
+			if HPOS >= -8 and HPOS < 256 and VPOS >= 0 and VPOS < 240 then
 --			if HPOS < 240 and VPOS < 240 then
 				case HPOS mod 8 is
 					when 0 =>
