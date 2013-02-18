@@ -9,6 +9,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.PPU_Pack.all;
 
 entity NES_2C02 is
 	port  (
@@ -38,53 +39,6 @@ end NES_2C02;
 
 architecture arch of NES_2C02 is
 
-component TileFetcher is
-port (
-		CLK : in std_logic;
-		CE : in std_logic;
-		RSTN : in std_logic;
-
-		HPOS : in integer;
-		VPOS : in integer;
-
-		VRAM_Address : out unsigned(13 downto 0);
-		VRAM_Data : in std_logic_vector(7 downto 0);
-
-		HorizontalScrollOffset : in unsigned(7 downto 0);
-		VerticalScrollOffset : in unsigned(7 downto 0);
-		PatternTableAddressOffset : in std_logic;
-		NameTableAddressOffset : in std_logic_vector(1 downto 0);
-
-		TileColor : out unsigned(3 downto 0)
-);
-end component;
-
-component SpriteSelector is
-  port (
-    CLK : in std_logic;
-    CE : in std_logic;
-    RSTN : in std_logic;
-        
-    HPOS : in integer;
-    VPOS : in integer;
-    
-		PatternTableAddressOffset : in std_logic;
-    
-    SpriteColor : out unsigned(3 downto 0);
-    SpriteForegroundPriority : out std_logic;
-    SpriteIsPrimary : out std_logic;
-        
-    SpriteOverflowFlag : out std_logic;
-        
-    VRAM_Address : out unsigned(13 downto 0);
-    VRAM_Data : in std_logic_vector(7 downto 0);
-        
-    SpriteRAM_Address : in unsigned(7 downto 0);
-    SpriteRAM_Data_in : in std_logic_vector(7 downto 0);
-    SpriteRAM_Data_out : out std_logic_vector(7 downto 0);
-    SpriteRAM_WriteEnable : in std_logic  
-  );
-end component;
 
   -- Internal H/V Counters
 	signal HSYNC_cnt : integer range 0 to 340 := 0;
@@ -251,9 +205,10 @@ begin
 	
 	
 	CPU_PORT : process (clk)
+	variable PPUDATA_read : std_logic_vector(7 downto 0);
 	begin	
 		if rising_edge(clk) then
-		  if CE = '1' then
+		  if CE = '1' and ChipSelect_N = '1' then
 		    if HPOS >= 0 and HPOS < 3 and VPOS = 0 then -- Start VBlank period
 					VBlankFlag <= '1';
 				elsif HPOS >= 0 and HPOS < 3 and VPOS = 20 then -- End VBlank Period
@@ -276,6 +231,8 @@ begin
 		      else
 		        CPUVRAM_Address <= CPUVRAM_Address + 32;
 		      end if;
+		      
+		      PPUDATA_read := PPU_Data;
 			  end if;
 			  
 			  -- Check for Sprite 0 collision
@@ -329,7 +286,7 @@ begin
 					VBlankFlag <= '0'; -- Reset flag at the end of read period
 					CPUPortDir <= '0'; -- Reset 16 bit register selector
 				end if;
-		  elsif ChipSelect_n = '0' and ReadWrite = '1' then
+		  elsif ChipSelect_delay = '1' and ChipSelect_n = '0' and ReadWrite = '1' then
 				if Address = "000" then
 					Data_out <= Status_2000;
 			  elsif Address = "001" then
@@ -341,7 +298,7 @@ begin
 					Data_out <= SpriteRAM_Data_out;
 					SpriteRAM_Address <= SpriteRAM_Address + 1;
 				elsif Address = "111" then
-				  Data_out <= PPU_Data;
+				  Data_out <= PPUDATA_read;
 				  CPUVRAM_Read <= '1';
 				  if CPUVRAM_Address(13 downto 8) = X"3F" then
 				    Data_out <= "00" & PaletteRAM(to_integer(CPUVRAM_Address(4 downto 0)));
@@ -360,7 +317,7 @@ begin
       PPU_Address <= CPUVRAM_Address;
 		elsif CPUVRAM_Write = '1' then
 			PPU_Address <= CPUVRAM_Address;
-		elsif HPOS >= 0 and HPOS < 256 then
+		elsif HPOS >= -15 and HPOS < 256 then
 			PPU_Address <= TileVRAM_Address;
 		else
 		  PPU_Address <= SpriteVRAM_Address;
