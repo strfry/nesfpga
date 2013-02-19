@@ -232,7 +232,9 @@ begin
 		        CPUVRAM_Address <= CPUVRAM_Address + 32;
 		      end if;
 		      
-		      PPUDATA_read := PPU_Data;
+		      if CPUVRAM_Read = '1' then
+  		        PPUDATA_read := PPU_Data;
+		      end if;
 			  end if;
 			  
 			  -- Check for Sprite 0 collision
