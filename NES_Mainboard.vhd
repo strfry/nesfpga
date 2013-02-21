@@ -78,7 +78,7 @@ begin
 				CPU_Data <= PRG_Data;
 			elsif CPU_Controller1Read_N = '0' then
 				--CPU_Data <= "ZZZZZZZ" & Controller1_Data0_N;
-				CPU_Data <= "ZZZZZ" & not Controller1_Data2_N & not Controller1_Data1_N & not Controller1_Data0_N;
+				CPU_Data <= "01000" & not Controller1_Data2_N & not Controller1_Data1_N & not Controller1_Data0_N;
 			else
 				CPU_Data <= (others => 'Z');
 		  end if;
