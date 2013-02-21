@@ -46,6 +46,16 @@
  NET "BTN<5>" LOC = "K19"; # Bank = 3,  Pin name = IO_L5N_GC_3,       Sch name = BTNL
  NET "BTN<6>" LOC = "J21"; # Bank = 3,  Pin name = IO_L7N_GC_3,       Sch name = BTNS
  
+ # onBoard SWITCHES
+ NET "sw<0>" LOC = "J19"; # Bank = 3, Pin name = IO_L3N_GC_3,      Sch name = SW0
+ NET "sw<1>" LOC = "L18"; # Bank = 3, Pin name = IO_L1N_CC_GC_3,   Sch name = SW1
+ NET "sw<2>" LOC = "K18"; # Bank = 3, Pin name = IO_L3P_GC_3,      Sch name = SW2
+ NET "sw<3>" LOC = "H18"; # Bank = 3, Pin name = IO_L0N_CC_GC_3,   Sch name = SW3
+ NET "sw<4>" LOC = "H17"; # Bank = 3, Pin name = IO_L0P_CC_GC_3,   Sch name = SW4
+ NET "sw<5>" LOC = "K17"; # Bank = 3, Pin name = IO_L1P_CC_GC_3,   Sch name = SW5
+ NET "sw<6>" LOC = "G16"; # Bank = 3, Pin name = IO_L2N_GC_VRP_3,  Sch name = SW6
+ NET "sw<7>" LOC = "G15"; # Bank = 3, Pin name = IO_L2P_GC_VRN_3,  Sch name = SW7
+ 
 #Created by Constraints Editor (xc5vlx50t-ff1136-2) - 2011/11/11
 NET "CLK" TNM_NET = CLK;
 TIMESPEC TS_CLK = PERIOD "CLK" 10 ns HIGH 50%;

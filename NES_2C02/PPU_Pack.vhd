@@ -32,8 +32,8 @@ component SpriteSelector is
     CE : in std_logic;
     RSTN : in std_logic;
         
-    HPOS : in integer;
-    VPOS : in integer;
+    HPOS : in integer range -42 to 298;
+    VPOS : in integer range 0 to 261;
     
 		PatternTableAddressOffset : in std_logic;
     
