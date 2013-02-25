@@ -135,7 +135,7 @@ begin
   variable patternColor : unsigned(1 downto 0);
   begin
     SpriteColor <= "0000";
-    SpriteForegroundPriority <= '0';
+    SpriteForegroundPriority <= '1';
     SpriteIsPrimary <= '0';
     
     for i in 7 downto 0 loop -- Loop backwards to prioritize the first entry, as it is written last
@@ -188,6 +188,7 @@ begin
 			        attributeByte := SpriteRAM(CurrentSpriteIndex * 4 + 2);
 			        TempLineBuffer(NumSpritesFound).palette <= unsigned(attributeByte(1 downto 0));
 			        TempLineBuffer(NumSpritesFound).foreground <= attributeByte(5);
+			        TempLineBuffer(NumSpritesFound).xflip <= attributeByte(6);
   			        if CurrentSpriteIndex = 0 then
   			          TempLineBuffer(NumSpritesFound).primary <= '1';
 			        end if;			          

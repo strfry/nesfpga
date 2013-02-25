@@ -177,7 +177,7 @@ begin
 			  FB_DE <= '1';
 			  FB_Address <= to_unsigned(HPOS + VPOS * 256, FB_Address'length);
 		
-				if (SpriteForegroundPriority = '1' or TileColor(1 downto 0) = "00") and SpriteColor(1 downto 0) /= "00" then
+				if (SpriteForegroundPriority = '0' or TileColor(1 downto 0) = "00") and SpriteColor(1 downto 0) /= "00" then
 				  color := to_integer(SpriteColor) + 16;
 				elsif TileColor(1 downto 0) /= "00" then
 				  color := to_integer(TileColor);
