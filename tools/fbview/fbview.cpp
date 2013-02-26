@@ -147,11 +147,20 @@ int main(int argc, char* argv[])
 		                    running = 0;
                             break;
                         case SDLK_LEFT:
-                            if (g_currentFrame > 0) g_currentFrame--;
+                            if (g_currentFrame > 0) {
+                              g_currentFrame--;
+                            } else {
+                              g_currentFrame = g_Frames.size() - 1;
+                            }
                             updateTitle();
                             break;
                         case SDLK_RIGHT:
-                            if (g_currentFrame < g_Frames.size() - 1) g_currentFrame++;
+                            if (g_currentFrame < g_Frames.size() - 1) {
+                                g_currentFrame++;
+                            } else {
+                                g_currentFrame = 0;
+                            }
+
                             updateTitle();
                             break;
                         }
