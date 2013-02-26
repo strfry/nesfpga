@@ -69,7 +69,7 @@ begin
   -- Output inverting buffer is controlled by read access on reg $4016, e.g. Controller1Read_N
   Controller1_Clock <= not CPU_PHI2 when CPU_Controller1Read_N = '0' else '1';
   
-  CPU_BUS_MUX : process(CPU_RW, PPU_CPU_Data, PRG_Data, CPU_PPU_CS_n, CPU_PRG_CS_n, CPU_Address, CPU_Controller1Read_N)
+  CPU_BUS_MUX : process(CPU_RW, PPU_CPU_Data, PRG_Data, CPU_PPU_CS_n, CPU_PRG_CS_n, CPU_Address, CPU_Controller1Read_N, CPU_Controller2Read_N)
   begin
     if CPU_RW = '1' then
 		  if CPU_PPU_CS_n = '0' then
@@ -77,8 +77,9 @@ begin
 			elsif	CPU_PRG_CS_n = '0' then
 				CPU_Data <= PRG_Data;
 			elsif CPU_Controller1Read_N = '0' then
-				--CPU_Data <= "ZZZZZZZ" & Controller1_Data0_N;
 				CPU_Data <= "01000" & not Controller1_Data2_N & not Controller1_Data1_N & not Controller1_Data0_N;
+			elsif CPU_Controller2Read_N = '0' then
+				CPU_Data <= "01000" & not Controller2_Data2_N & not Controller2_Data1_N & not Controller2_Data0_N;
 			else
 				CPU_Data <= (others => 'Z');
 		  end if;
