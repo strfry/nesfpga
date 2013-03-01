@@ -16,21 +16,28 @@ entity Loopy_Scrolling is
 		CE            : in  std_logic;
 		rst           : in  std_logic;
 
-		-- CPU Port
-		Address       : in  std_logic_vector(2 downto 0); -- Register address
-		Data_in       : in  std_logic_vector(2 downto 0); -- Write data
-		Data_out      : out std_logic_vector(2 downto 0); -- Read data
-		WE            : in  std_logic;  -- Write
+		Loopy_t       : in  std_logic_vector(14 downto 0); -- Temporary register driven by CPU Port		
+
+		Loopy_v       : out std_logic_vector(14 downto 0); -- Counting register
 
 		-- Control lines
-		EndOfScanline : in  std_logic;  -- Goes up at scanline dot #256
-
-		Loopy_v       : out std_logic_vector(14 downto 0);
+		
+		ResetXCounter  : in  std_logic; -- Load initial scroll values
+		ResetYCounter : in std_logic;
+		
+		IncXScroll    : in std_logic -- Increment coarse X, at every 8 pixels during scanline rendering
+		IncYScroll    : in  std_logic;  -- Increment Y, at scanline dot #256
+		
+		IncAddress	  : in std_logic; -- Increment Address during $2007 VRAM access
+		AddressStep   : in std_logic; -- Increment in steps of 32 instead of 1 
+		
 
 	);
 end entity Loopy_Scrolling;
 
 architecture RTL of Loopy_Scrolling is
+
+--  counter layout of the loopy registers
 --	
 --	yyy NN YYYYY XXXXX
 --	||| || ||||| +++++-- coarse X scroll
@@ -38,5 +45,44 @@ architecture RTL of Loopy_Scrolling is
 --	||| ++-------------- nametable select
 --	+++----------------- fine Y scroll
 
+	alias FineYScroll is Loopy_v(14 downto 12);
+	alias YNametable is Loopy_v(11);
+	alias XNametable is Loopy_v(10);
+	alias CoarseYScroll is Loopy_v(9 downto 5);
+	alias CoarseXScroll is Loopy_v(4 downto 0);
+
 begin
+
+	process (clk) is
+	begin
+		if rising_edge(clk) then
+			if ResetXCounter = '1' and ResetYCounter = '1' then
+				Loopy_v <= Loopy_t;
+			elsif ResetXCounter = '1' then
+				XNametable <= Loopy_t(10);
+				CoarseXScroll <= Loopy_t(4 downto 0);
+			elsif ResetYCounter = '1' then
+				FineYScrol <= Loopy_t(14 downto 2)
+				YNametable <= Loopy_t(11);
+				CoarseYScroll <= Loopy_t(9 downto 5);
+			elsif IncXScroll = '1' then
+				XNameTable & CoarseXScroll <= (XNameTable & CoarseXScroll) + 1;
+			elsif IncYScroll = '1' then
+				if CoarseYScroll = 29 and FineYScroll = 31 then
+					-- Coarse Y acts as a divide-by-30 counter
+					
+					YNametable <= not YNametable;
+					CoarseYScroll <= "00000";
+					FineYScroll <= "000";
+				else
+					CoarseYScroll & FineYScroll <= (CoarseYScroll & FineYScroll) + 1;
+				end if;
+			elsif IncAddress = '1' and AddressStep = '0' then
+				Loopy_v <= Loopy_v + 1;
+			elsif IncAddress = '1' and AddressStep = '1' then
+				Loopy_v(14 downto 5) <= Loopy(14 downto 5) + 1; 
+			end if;
+		end if;
+	end process ;
+	
 end architecture RTL;
