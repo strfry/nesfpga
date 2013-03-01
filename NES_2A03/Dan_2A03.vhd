@@ -131,17 +131,16 @@ ControllerTwoPoll <= '1' when Address = x"4017" else '0';
 C1R_N <= not (ControllerOnePoll and RW_10 and PHI2_Internal);
 C2R_N <= not (ControllerTwoPoll and RW_10 and PHI2_Internal);
 
-process (Address, ReadOKSignal, RW_10, PHI2_Internal)
+
+process (Global_Clk)
 begin
-	if (Address = x"4016" and RW_10 = '0' and ReadOKSignal = '1') then
-		Data <= "ZZZZZZZZ";
-		CStrobe <= Data(0);
-	elsif (Address = x"4016" and RW_10 = '1' and PHI2_Internal = '1') then
-		Data <= "010ZZZZZ";
-	else
-		Data <= "ZZZZZZZZ";
-	end if;
-end process;
+  if rising_edge(Global_Clk) then
+    if Address = X"4016" and RW_10 = '0' and ReadOKSignal = '1' then
+      CStrobe <= Data(0);
+    end if;
+  end if;
+end process;    
+
 
 RW_10Signal <= T65RW_10 when BusControl = '0' else DMARW_10;
 AddressSignal <= T65Address when BusControl = '0' else DMAAddress;
