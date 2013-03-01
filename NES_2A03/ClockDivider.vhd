@@ -20,8 +20,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-Library UNISIM;
-use UNISIM.vcomponents.all;
 
 entity Clock_Divider is
 	port(Clk_In, Reset_N, Enable : in std_logic;
