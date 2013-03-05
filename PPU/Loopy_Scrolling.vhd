@@ -43,29 +43,34 @@ architecture RTL of Loopy_Scrolling is
 	--	||| || +++++-------- coarse Y scroll
 	--	||| ++-------------- nametable select
 	--	+++----------------- fine Y scroll
+	
+	signal Loopy : unsigned(14 downto 0) := (others => '0'); -- Internal output register
 
-	alias FineYScroll : unsigned is Loopy_v(14 downto 12);
-	alias YNametable : std_logic is Loopy_v(11);
-	alias XNametable : std_logic is Loopy_v(10);
-	alias CoarseYScroll : unsigned is Loopy_v(9 downto 5);
-	alias CoarseXScroll : unsigned is Loopy_v(4 downto 0);
+	alias FineYScroll : unsigned is Loopy(14 downto 12);
+	alias YNametable : std_logic is Loopy(11);
+	alias XNametable : std_logic is Loopy(10);
+	alias CoarseYScroll : unsigned is Loopy(9 downto 5);
+	alias CoarseXScroll : unsigned is Loopy(4 downto 0);
 
 begin
+  
+  Loopy_v <= Loopy; 
+  
 	process(clk) is
 	variable sum : unsigned(7 downto 0);
 	begin
-		if rising_edge(clk) then
+		if rising_edge(clk) and CE = '1' then
 			if ResetXCounter = '1' and ResetYCounter = '1' then
-				Loopy_v <= Loopy_t;
+				Loopy <= Loopy_t;
 			elsif ResetXCounter = '1' then
 				XNametable    <= Loopy_t(10);
 				CoarseXScroll <= Loopy_t(4 downto 0);
 			elsif ResetYCounter = '1' then
-				FineYScroll   <= Loopy_t(14 downto 2);
+				FineYScroll   <= Loopy_t(14 downto 12);
 				YNametable    <= Loopy_t(11);
 				CoarseYScroll <= Loopy_t(9 downto 5);
 			elsif IncXScroll = '1' then 
-				sum := (XNameTable & CoarseXScroll) + 1;
+				sum := "00" & ((XNameTable & CoarseXScroll) + 1);
 				XNameTable <= sum(5);
 				CoarseXScroll <= sum (4 downto 0); 
 			elsif IncYScroll = '1' then
@@ -80,9 +85,9 @@ begin
 					FineYScroll <= sum(2 downto 0);
 				end if;
 			elsif IncAddress = '1' and AddressStep = '0' then
-				Loopy_v <= Loopy_v + 1;
+				Loopy <= Loopy + 1;
 			elsif IncAddress = '1' and AddressStep = '1' then
-				Loopy_v(14 downto 5) <= Loopy_v(14 downto 5) + 1;
+				Loopy(14 downto 5) <= Loopy(14 downto 5) + 1;
 			end if;
 		end if;
 	end process;

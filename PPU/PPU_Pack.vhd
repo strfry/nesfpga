@@ -9,7 +9,11 @@ component TileFetcher is
 port (
 		CLK : in std_logic;
 		CE : in std_logic;
-		RSTN : in std_logic;
+		RSTN : in std_logic;		
+		
+		Loopy_v                   : in unsigned(14 downto 0);
+		FineXScrolling            : in unsigned(2 downto 0);
+ 
 
 		HPOS : in integer;
 		VPOS : in integer;
@@ -31,7 +35,7 @@ component SpriteSelector is
     CLK : in std_logic;
     CE : in std_logic;
     RSTN : in std_logic;
-        
+       
     HPOS : in integer range -42 to 298;
     VPOS : in integer range 0 to 261;
     
@@ -51,5 +55,20 @@ component SpriteSelector is
     SpriteRAM_Data_out : out std_logic_vector(7 downto 0);
     SpriteRAM_WriteEnable : in std_logic  
   );
+end component;
+
+component Loopy_Scrolling
+  port (
+    clk           : in     std_logic;
+    CE            : in     std_logic;
+    rst           : in     std_logic;
+    Loopy_t       : in     unsigned(14 downto 0);
+    Loopy_v       : buffer unsigned(14 downto 0);
+    ResetXCounter : in     std_logic;
+    ResetYCounter : in     std_logic;
+    IncXScroll    : in     std_logic;
+    IncYScroll    : in     std_logic;
+    IncAddress    : in     std_logic;
+    AddressStep   : in     std_logic);
 end component;
 end package;
