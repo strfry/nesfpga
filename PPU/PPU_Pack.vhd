@@ -4,33 +4,22 @@ use ieee.numeric_std.all;
 
 
 package PPU_Pack is
-  
-component TileFetcher is
-port (
-		CLK : in std_logic;
-		CE : in std_logic;
-		RSTN : in std_logic;		
-		
-		Loopy_v                   : in unsigned(14 downto 0);
-		FineXScrolling            : in unsigned(2 downto 0);
- 
+  component TileFetcher
+    port (
+      CLK             : in  std_logic;
+      CE              : in  std_logic;
+      RSTN            : in  std_logic;
+      Loopy_v         : in  unsigned(14 downto 0);
+      FineXScrolling  : in  unsigned(2 downto 0);
+      EnableRendering : in  std_logic;
+      PatternTableAddressOffset : in std_logic;
+      Fine_HPOS       : in integer range 0 to 7;
+      VRAM_Address    : out unsigned(13 downto 0);
+      VRAM_Data       : in  std_logic_vector(7 downto 0);
+      TileColor       : out unsigned(3 downto 0));
+  end component;
 
-		HPOS : in integer;
-		VPOS : in integer;
-
-		VRAM_Address : out unsigned(13 downto 0);
-		VRAM_Data : in std_logic_vector(7 downto 0);
-
-		HorizontalScrollOffset : in unsigned(7 downto 0);
-		VerticalScrollOffset : in unsigned(7 downto 0);
-		PatternTableAddressOffset : in std_logic;
-		NameTableAddressOffset : in std_logic_vector(1 downto 0);
-
-		TileColor : out unsigned(3 downto 0)
-);
-end component;
-
-component SpriteSelector is
+  component SpriteSelector is
   port (
     CLK : in std_logic;
     CE : in std_logic;
