@@ -399,7 +399,7 @@ begin
 
     EnableTileRendering <= '0';
     
-    if Status_2001(1) = '1' then
+    if Status_2001(3) = '1' then
     if VPOS = 261 then
       if HPOS >= 280 and HPOS < 304 then
         ResetYCounter <= '1';
