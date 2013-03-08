@@ -29,6 +29,7 @@ entity Loopy_Scrolling is
 		IncXScroll    : in  std_logic;  -- Increment coarse X, at every 8 pixels during scanline rendering
 		IncYScroll    : in  std_logic;  -- Increment Y, at scanline dot #256
 
+    LoadAddress   : in std_logic;   -- Copy t to v, for CPU VRAM Access
 		IncAddress    : in  std_logic;  -- Increment Address during $2007 VRAM access
 		AddressStep   : in  std_logic   -- Increment in steps of 32 instead of 1
 	);
@@ -62,7 +63,7 @@ begin
 	  if rst = '0' then
 	    Loopy <= (others => '0');
 		elsif rising_edge(clk) and CE = '1' then
-			if ResetXCounter = '1' and ResetYCounter = '1' then
+			if LoadAddress = '1' then
 				Loopy <= Loopy_t;
 			elsif ResetXCounter = '1' then
 				XNametable    <= Loopy_t(10);

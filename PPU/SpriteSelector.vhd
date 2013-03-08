@@ -163,15 +163,15 @@ begin
 			--CurrentSpriteIndex <= 0;
 		elsif rising_edge(clk) and CE = '1' then
 		  
-			if VPOS = 0 and HPOS = 0 then
+			if VPOS = 240 and HPOS = 0 then
 			  SpriteOverflowFlag <= '0';
 			end if;
 			
-			if HPOS = -1 then
+			if HPOS = 340 then
 				NumSpritesFound <= 0;
         TempLineBuffer <= (others => TempLineBufferDefault);
 			  CurrentSpriteIndex := 0;
-			elsif HPOS >= 0 and HPOS < 256 and VPOS >= 0 and VPOS < 240 and NumSpritesFound < 8 then
+			elsif HPOS < 256 and VPOS < 240 and NumSpritesFound < 8 then
 			  -- Sprite Lookup phase (8 out of 64 selection)
 			  
 			  CurrentSpriteIndex := HPOS / 4;

@@ -56,7 +56,8 @@ component Loopy_Scrolling
     ResetXCounter : in     std_logic;
     ResetYCounter : in     std_logic;
     IncXScroll    : in     std_logic;
-    IncYScroll    : in     std_logic;
+    IncYScroll    : in     std_logic;    
+    LoadAddress   : in     std_logic;
     IncAddress    : in     std_logic;
     AddressStep   : in     std_logic);
 end component;
