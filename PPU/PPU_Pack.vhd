@@ -25,7 +25,7 @@ package PPU_Pack is
     CE : in std_logic;
     RSTN : in std_logic;
        
-    HPOS : in integer range -42 to 298;
+    HPOS : in integer range 0 to 340;
     VPOS : in integer range 0 to 261;
     
 		PatternTableAddressOffset : in std_logic;
@@ -52,7 +52,7 @@ component Loopy_Scrolling
     CE            : in     std_logic;
     rst           : in     std_logic;
     Loopy_t       : in     unsigned(14 downto 0);
-    Loopy_v       : buffer unsigned(14 downto 0);
+    Loopy_v       : out unsigned(14 downto 0);
     ResetXCounter : in     std_logic;
     ResetYCounter : in     std_logic;
     IncXScroll    : in     std_logic;

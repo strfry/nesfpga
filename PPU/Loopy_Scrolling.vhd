@@ -19,7 +19,7 @@ entity Loopy_Scrolling is
 
 		Loopy_t       : in  unsigned(14 downto 0); -- Temporary register driven by CPU Port		
 
-		Loopy_v       : buffer unsigned(14 downto 0); -- Counting register
+		Loopy_v       : out unsigned(14 downto 0); -- Counting register
 
 		-- Control lines
 

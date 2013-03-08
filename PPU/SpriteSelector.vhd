@@ -9,7 +9,7 @@ entity SpriteSelector is
     CE : in std_logic;
     RSTN : in std_logic;
         
-    HPOS : in integer range -42 to 298;
+    HPOS : in integer range 0 to 340;
     VPOS : in integer range 0 to 261;
     
 		PatternTableAddressOffset : in std_logic;
@@ -66,8 +66,8 @@ architecture arch of SpriteSelector is
   end record;
   
   constant TempLineBufferDefault : TempLineBufferEntry := (
-    patternIndex => X"00", ydiff => X"FF", x => X"00",
-    palette => "00", others => '0'
+    patternIndex => X"FF", ydiff => X"FF", x => X"FF",
+    palette => "11", others => '1'
   );
   
 	type TempLineBufferType is array(7 downto 0) of TempLineBufferEntry;
@@ -189,6 +189,7 @@ begin
 			        TempLineBuffer(NumSpritesFound).palette <= unsigned(attributeByte(1 downto 0));
 			        TempLineBuffer(NumSpritesFound).foreground <= attributeByte(5);
 			        TempLineBuffer(NumSpritesFound).xflip <= attributeByte(6);
+              TempLineBuffer(NumSpritesFound).primary <= '0';
   			        if CurrentSpriteIndex = 0 then
   			          TempLineBuffer(NumSpritesFound).primary <= '1';
 			        end if;			          
@@ -208,7 +209,7 @@ begin
 	
 	
 	SPRITE_MEMFETCH : process (clk)
-	variable currentSprite : integer 0 to 7;
+	variable currentSprite : integer range 0 to 7;
 	variable patternAddress : unsigned(13 downto 0);
 	variable fetchedByte : unsigned(7 downto 0);
 	begin
