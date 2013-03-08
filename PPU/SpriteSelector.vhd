@@ -208,7 +208,7 @@ begin
 	
 	
 	SPRITE_MEMFETCH : process (clk)
-	variable currentSprite : integer;
+	variable currentSprite : integer 0 to 7;
 	variable patternAddress : unsigned(13 downto 0);
 	variable fetchedByte : unsigned(7 downto 0);
 	begin

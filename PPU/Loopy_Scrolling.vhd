@@ -47,17 +47,17 @@ architecture RTL of Loopy_Scrolling is
 	
 	signal Loopy : unsigned(14 downto 0) := (others => '0'); -- Internal output register
 
-	alias FineYScroll : unsigned is Loopy(14 downto 12);
+	alias FineYScroll : unsigned(2 downto 0) is Loopy(14 downto 12);
 	alias YNametable : std_logic is Loopy(11);
 	alias XNametable : std_logic is Loopy(10);
-	alias CoarseYScroll : unsigned is Loopy(9 downto 5);
-	alias CoarseXScroll : unsigned is Loopy(4 downto 0);
+	alias CoarseYScroll : unsigned(4 downto 0) is Loopy(9 downto 5);
+	alias CoarseXScroll : unsigned(4 downto 0) is Loopy(4 downto 0);
 
 begin
   
   Loopy_v <= Loopy; 
   
-	process(clk) is
+	process(clk, rst) is
 	variable sum : unsigned(7 downto 0);
 	begin
 	  if rst = '0' then

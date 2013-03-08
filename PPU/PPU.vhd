@@ -150,7 +150,7 @@ begin
   end process;
 
   process(clk)
-    variable color : integer;
+    variable color : integer range 0 to 31;
   begin
     if rising_edge(clk) and CE = '1' then
       FB_DE <= '0';
@@ -295,7 +295,7 @@ begin
     end if;
   end process;
 
-  PPU_ADDRESS_MUXER : process(CPUVRAM_Read, CPUVRAM_Write, Loopy_v, TileVRAM_Address, HPOS)
+  PPU_ADDRESS_MUXER : process(CPUVRAM_Read, CPUVRAM_Write, Loopy_v, TileVRAM_Address, SpriteVRAM_Address, HPOS)
   begin
     if CPUVRAM_Read = '1' then
       PPU_Address <= Loopy_v(13 downto 0);
@@ -390,7 +390,7 @@ begin
       IncAddress    => IncAddress,
       AddressStep   => AddressStep);
 
-  Loopy_control : process (HPOS, VPOS, Address, ReadWrite, ChipSelect_N)
+  Loopy_control : process (HPOS, VPOS, Address, ReadWrite, ChipSelect_N, Status_2001)
   begin
     ResetXCounter <= '0';
     ResetYCounter <= '0';

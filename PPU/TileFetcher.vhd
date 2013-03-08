@@ -77,7 +77,7 @@ begin
 
     -- Helper variables
     variable attr_offset : unsigned(2 downto 0);
-    variable aoi         : integer;
+    variable aoi         : integer 0 to 6;
   begin
     if rstn = '0' then
       VRAM_Address <= (others => '0');
