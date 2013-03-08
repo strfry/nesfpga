@@ -46,8 +46,8 @@ begin
     attr_offset := 7 - to_integer(FineXScrolling);
     pattern_offset := 15 - to_integer(FineXScrolling);
     
-    TileColor <= TileAttribute0(attr_offset) & TileAttribute1(attr_offset) & 
-                  TilePattern0(pattern_offset) & TilePattern1(pattern_offset);
+    TileColor <= TileAttribute1(attr_offset) & TileAttribute0(attr_offset) & 
+                  TilePattern1(pattern_offset) & TilePattern0(pattern_offset);
   end process;
 
   SHIFT_REGS : process(CE, clk)
@@ -92,8 +92,8 @@ begin
           when 3 =>
             attr_offset    := Loopy_v(6) & Loopy_v(1) & "0";
             aoi            := to_integer(attr_offset);
-            NextAttribute0 <= VRAM_Data(aoi + 1);
-            NextAttribute1 <= VRAM_Data(aoi);
+            NextAttribute0 <= VRAM_Data(aoi);
+            NextAttribute1 <= VRAM_Data(aoi + 1);
           when 4 =>
             VRAM_Address <= "0" & PatternTableAddressOffset & NextTileName & "0" & Loopy_v(14 downto 12);
           when 5 =>
