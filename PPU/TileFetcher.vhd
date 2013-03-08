@@ -25,10 +25,13 @@ entity TileFetcher is
 end TileFetcher;
 
 architecture Behavioral of TileFetcher is
-  signal TilePattern0   : std_logic_vector(15 downto 0);
-  signal TilePattern1   : std_logic_vector(15 downto 0);
-  signal TileAttribute0 : unsigned(7 downto 0);
-  signal TileAttribute1 : unsigned(7 downto 0);
+  signal TilePattern0   : std_logic_vector(15 downto 0) := (others => '0');
+  signal TilePattern1   : std_logic_vector(15 downto 0) := (others => '0');
+  signal TileAttribute0 : unsigned(7 downto 0) := (others => '0');
+  signal TileAttribute1 : unsigned(7 downto 0) := (others => '0');
+  
+  signal AttributeLatch0 : std_logic;
+  signal AttributeLatch1 : std_logic;
 
   signal NextPattern0   : std_logic_vector(7 downto 0);
   signal NextPattern1   : std_logic_vector(7 downto 0);
@@ -38,30 +41,33 @@ architecture Behavioral of TileFetcher is
 
 begin
   process(TileAttribute0, TileAttribute1, TilePattern0, TilePattern1)
-    variable attr_color : unsigned(1 downto 0);
+    variable attr_offset, pattern_offset : integer;
   begin
-    -- aoi := to_integer(attr_offset);
-    --NextTileAttribute := unsigned(VRAM_Data(aoi + 1 downto aoi));
-
---    attr_color := TileAttribute(aoi + 1 downto aoi);
---    TileColor <= attr_color & TilePattern1(7 - HPOS mod 8) & TilePattern0(7 - HPOS mod 8);
-    TileColor <= TileAttribute0(7) & TileAttribute1(7) & TilePattern0(15) & TilePattern1(15);
+    attr_offset := 7 - to_integer(FineXScrolling);
+    pattern_offset := 15 - to_integer(FineXScrolling);
+    
+    TileColor <= TileAttribute0(attr_offset) & TileAttribute1(attr_offset) & 
+                  TilePattern0(pattern_offset) & TilePattern1(pattern_offset);
   end process;
 
   SHIFT_REGS : process(CE, clk)
   begin
     if rising_edge(clk) and CE = '1' then
+      if EnableRendering = '1' then
       TilePattern0 <= TilePattern0(14 downto 0) & "-";
       TilePattern1 <= TilePattern1(14 downto 0) & "-";
 
       if Fine_HPOS mod 8 = 0 then
         TilePattern0(7 downto 0) <= NextPattern0;
         TilePattern1(7 downto 0) <= NextPattern1;
+        AttributeLatch0 <= NextAttribute0;
+        AttributeLatch1 <= NextAttribute1;
       end if;
 
-      TileAttribute0 <= TileAttribute0(6 downto 0) & NextAttribute0;
-      TileAttribute1 <= TileAttribute1(6 downto 0) & NextAttribute1;
+      TileAttribute0 <= TileAttribute0(6 downto 0) & AttributeLatch0;
+      TileAttribute1 <= TileAttribute1(6 downto 0) & AttributeLatch1;
     end if;
+  end if;
   end process;
 
   PREFETCH : process(CE, clk, rstn)
@@ -76,7 +82,6 @@ begin
     if rstn = '0' then
       VRAM_Address <= (others => '0');
     elsif rising_edge(clk) and CE = '1' then
-      if EnableRendering = '1' then
         case Fine_HPOS mod 8 is
           when 0 =>
             VRAM_Address <= "10" & Loopy_v(11 downto 0);
@@ -87,8 +92,8 @@ begin
           when 3 =>
             attr_offset    := Loopy_v(6) & Loopy_v(1) & "0";
             aoi            := to_integer(attr_offset);
-            NextAttribute0 <= VRAM_Data(aoi);
-            NextAttribute1 <= VRAM_Data(aoi + 1);
+            NextAttribute0 <= VRAM_Data(aoi + 1);
+            NextAttribute1 <= VRAM_Data(aoi);
           when 4 =>
             VRAM_Address <= "0" & PatternTableAddressOffset & NextTileName & "0" & Loopy_v(14 downto 12);
           when 5 =>
@@ -103,7 +108,6 @@ begin
           when others =>
         end case;
       end if;
-    end if;
   end process;
 
 end Behavioral;

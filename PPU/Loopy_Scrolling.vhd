@@ -59,7 +59,9 @@ begin
 	process(clk) is
 	variable sum : unsigned(7 downto 0);
 	begin
-		if rising_edge(clk) and CE = '1' then
+	  if rst = '0' then
+	    Loopy <= (others => '0');
+		elsif rising_edge(clk) and CE = '1' then
 			if ResetXCounter = '1' and ResetYCounter = '1' then
 				Loopy <= Loopy_t;
 			elsif ResetXCounter = '1' then
@@ -72,7 +74,7 @@ begin
 			elsif IncXScroll = '1' then 
 				sum := "00" & ((XNameTable & CoarseXScroll) + 1);
 				XNameTable <= sum(5);
-				CoarseXScroll <= sum (4 downto 0); 
+				CoarseXScroll <= sum (4 downto 0);
 			elsif IncYScroll = '1' then
 				if CoarseYScroll = 29 and FineYScroll = 31 then
 					-- Coarse Y acts as a divide-by-30 counter
@@ -87,9 +89,10 @@ begin
 			elsif IncAddress = '1' and AddressStep = '0' then
 				Loopy <= Loopy + 1;
 			elsif IncAddress = '1' and AddressStep = '1' then
-				Loopy(14 downto 5) <= Loopy(14 downto 5) + 1;
+				Loopy <= Loopy + 32;
 			end if;
 		end if;
 	end process;
+	
 
 end architecture RTL;
