@@ -89,7 +89,7 @@ def AC97_WavWriter(CLK, PCM, filename):
 
 	@always(CLK.posedge)
 	def writeSample():
-		outfile.writeframes(chr(int(PCM) * 16))
+		outfile.writeframes(chr(int(PCM) * 4))
 
 	return ac97_clk_gen, writeSample
 
@@ -97,12 +97,25 @@ def TestBench():
 	NES_CLK = Signal(False)
 	AC97_CLK = Signal(False)
 	APU_CE = Signal(False)
-	PCM = Signal(intbv()[4:])
+	PCM = Signal(intbv()[8:])
 
-	PulseTimer = Signal(intbv())
+	Pulse1Timer = Signal(intbv())
+	Pulse2Timer = Signal(intbv())
+	TriangleTimer = Signal(intbv())
+	
+	Pulse1PCM = Signal(intbv()[4:])
+	Pulse2PCM = Signal(intbv()[4:])
+	TrianglePCM = Signal(intbv()[4:])
+
+	@always_comb
+	def comb():
+		PCM.next = Pulse1PCM + Pulse2PCM + TrianglePCM
+		#PCM.next = TrianglePCM
 
 	nes_clk_gen = clk_gen(NES_CLK, NES_CLK_period)
-	pulse1 = APU_Pulse(NES_CLK, APU_CE, PulseTimer, PCM)
+	pulse1 = APU_Pulse(NES_CLK, APU_CE, Pulse1Timer, Pulse1PCM)
+	pulse2 = APU_Pulse(NES_CLK, APU_CE, Pulse2Timer, Pulse2PCM)
+	triangle = APU_Triangle(NES_CLK, APU_CE, TriangleTimer, TrianglePCM)
 	ac97 = AC97_WavWriter(AC97_CLK, PCM, "pulse.wav")
 
 	num_cycles = Signal(cpu.processorCycles)
@@ -129,15 +142,25 @@ def TestBench():
 			num_cycles.next = num_cycles + 1
 			if num_cycles == cpu.processorCycles:
 				cpu.step()
+				
+				timer_low = intbv(mem[0x4002])[8:0]
+				timer_high = intbv(mem[0x4003])[3:0]
 
+				Pulse1Timer.next = concat(timer_high, timer_low)
+
+				timer_low = intbv(mem[0x4006])[8:0]
+				timer_high = intbv(mem[0x4007])[3:0]
+
+				Pulse2Timer.next = concat(timer_high, timer_low)
+				
 				timer_low = intbv(mem[0x400a])[8:0]
 				timer_high = intbv(mem[0x400b])[3:0]
 
-				PulseTimer.next = concat(timer_high, timer_low)
+				TriangleTimer.next = concat(timer_high, timer_low)
 
 	#foo = traceSignals(APU_Pulse, NES_CLK, APU_CE, PCM)
 
-	return pulse1, ac97, nes_clk_gen, ce
+	return pulse1, pulse2, triangle, ac97, nes_clk_gen, ce, comb
 
 Simulation(TestBench()).run()
 
