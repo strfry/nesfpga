@@ -1,0 +1,42 @@
+- NES Components
+	Mainboard
+		System block diagram
+		Memory buses
+		Cartridge
+	CPU
+		6502
+		Memory Layout
+	PPU
+		Image Generation
+		Background field
+			Scrolling
+		Sprite Engine
+		Quirks
+			Interaction between Scrolling and VRAM access
+	APU
+		Explain different Channels
+	Memory Mappers
+	
+- Methodology
+	Information Gathering
+		Notes and examples on the required emulator accuracy
+		Inferring implementation from NES quirks
+	Test Benches
+		Need for TB from experience with long synthesis times
+		FBView Tool
+		MyHDL usage
+		APU TestBench
+	Useful test ROMs
+		NEStress
+	
+Differences regarding FPGA implementation
+	HDMI Output module
+	Block RAM Cartridge
+
+Future Work
+	Scaling
+	More mappers / External ROM Memory
+	WRAM Implementation
+	Modern Interfaces (USB HID Input)
+	Different region implementations (NTSC/PAL, Famicom, Dendy)
+
