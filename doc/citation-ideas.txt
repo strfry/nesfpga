@@ -1,0 +1,4 @@
+Mention interesting characteristics of the NES making it interesting for current research
+
+Small RAM and efficient hand-coded 6502 is used to implement a simple learning algorithm:1
+http://www.cs.cmu.edu/~tom7/mario/mario.pdf
