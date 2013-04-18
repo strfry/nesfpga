@@ -1,0 +1,9 @@
+- Tristate vs. Multiplexer design
+	- Tristate are not implemented in FPGA hardware nowadays, but for compatibility reasons, automatic
+		transformation to mux busses are well-supported in synthesizer, allthough not recommended
+	- Dan Leach's 6502 core was a tristate design
+	- Bad coding leads to undefined simulation states and possible mismatches
+	- Multiplexer design in new code
+	- Some NES Components have an external discrete address decoder. This makes sense to combine with a muxer design, because the decoding logic lands in one hierarchical block
+	- Input registers and APU are placed and decoded inside the CPU chip, but can equally be distinct devices on the memory bus. Only drawback is that the APU needs a connection to the internal CPU clock
+	- Muxes imply a different design, because address decoding is moved outside of the device.
