@@ -26,49 +26,57 @@ class NSFParser:
 		assert bytes[0x70:0x78] == '\x00\x00\x00\x00\x00\x00\x00\x00', "Bank switching not supported at this time"
 		
 		self.data = bytes[0x80:]
-		
-
-nsf = NSFParser(bytearray(file("smb.nsf").read()))
-
-# Set up Memory with Hooks
-
-mem = ObservableMemory()
-mem.write(nsf.load_addr, nsf.data)
-
-def apu_write(address, value):
-	print "APU Write at %08X: %08x" % (address, value)
-
-def apu_read(address):
-	print "APU Read at %08X" % (address)
-	return 0
 
 
-mem.subscribe_to_write(range(0x4000, 0x4020), apu_write)
-mem.subscribe_to_read(range(0x4000, 0x4020), apu_read)
+class NSFSoftCPU:
+	NES_CLK_period = 46 * 12
 
-# Instantiate CPU
+	def __init__(self, filename):
+		self.nsf = NSFParser(bytearray(file("smb.nsf").read()))
 
-cpu = MPU(mem)
+		# Set up Memory with Hooks
+		self.mem = ObservableMemory()
+		self.mem.write(nsf.load_addr, nsf.data)
+		self.cpu = MPU(mem)
+		self.deltaCallTime = 0
+		self.totalCycles
 
-# Push a special address -1 to the stack to implement function calls
-cpu.stPushWord(0x1337 - 1)
+	def subscribe_to_write(self, range, callback):
+		self.mem.subscribe_to_write(range, callback)
 
-# NSF Style init call
-cpu.a = nsf.start_song - 1
-cpu.x = 0
-cpu.pc = nsf.init_addr
+	# Call NSF Init code
+	def setup():
+		# Push a special address -1 to the stack to implement function calls
+		self.cpu.stPushWord(0x1337 - 1)
 
-while cpu.pc != 0x1337:
-	#print cpu
-	cpu.step()
+		# NSF Style init call
+		cpu.a = nsf.start_song - 1
+		cpu.x = 0
+		cpu.pc = nsf.init_addr
 
-# Initialization complete, now call play method repeatedly
+		while cpu.pc != 0x1337:
+			cpu.step()
 
-while True:
-	cpu.stPushWord(0x1337 - 1)
-	cpu.pc = nsf.play_addr
 
-	while cpu.pc != 0x1337:
-		cpu.step()
+	# Execute 1 CPU Step, or wait to until enough cycles have passed
+	def play_cycle():
+		self.deltaCallTime = self.deltaCallTime + NES_CLK_period
 
-	print "Frame Completed"
+		check_frame()
+		if cpu.pc != 0x1337:
+			self.totalCycles = self.totalCycles + 1
+			if self.totalCycles == cpu.processorCycles:
+				self.cpu.step()
+
+
+	# Internal: Check if frame is completed and restart it periodically
+	def check_frame():
+		if self.cpu.pc == 0x1337:
+			frame_time = self.nsf.ntsc_ticks * 1000
+			if self.deltaCallTime >= frame_time:
+				self.deltaCallTime = self.deltaCallTime - frame_time
+				self.cpu.stPushWord(0x1337 - 1)
+				self.cpu.pc = self.nsf.play_addr
+				print "Frame Completed"
+
+
