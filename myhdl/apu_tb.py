@@ -56,7 +56,7 @@ cpu = MPU(mem)
 cpu.stPushWord(0x1337 - 1)
 
 # NSF Style init call
-cpu.a = nsf.start_song - 1
+cpu.a = nsf.start_song - 1  + 1
 cpu.x = 0
 cpu.pc = nsf.init_addr
 
@@ -243,6 +243,7 @@ def TestBench():
 		#print deltaCallTime, nsf.ntsc_ticks * 1000
 		#print num_cycles, cpu.processorCycles
 
+
 		if deltaCallTime >= nsf.ntsc_ticks * 1000 and cpu.pc==0x1337:
 			deltaCallTime.next = deltaCallTime - nsf.ntsc_ticks * 1000
 			cpu.stPushWord(0x1337 - 1)
@@ -267,5 +268,26 @@ def TestBench():
 
 	return pulse1, pulse2, triangle, noise, ac97, nes_clk_gen, ce, comb, frameCounter, noiseEnvelope, pulse1Envelope, pulse2Envelope
 
-Simulation(TestBench()).run()
+def TestBench2():
+	NES_CLK = Signal(False)
+	AC97_CLK = Signal(False)
+	PHI1_CE = Signal(False)
+	PHI2_CE = Signal(False)
+	PCM = Signal(intbv()[8:])
+
+	Address = Signal(intbv()[16:])
+	Data_w = Signal(intbv()[8:])
+	Data_r = Signal(intbv()[8:])
+
+	APU_Interrupt = Signal(False)
+
+
+	apu = APU_Main(NES_CLK, PHI1_CE, PHI2_CE,
+		Address, Data_w, Data_r, APU_Interrupt, PCM)
+
+	return apu
+
+
+
+Simulation(TestBench2()).run()
 

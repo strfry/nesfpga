@@ -4,6 +4,33 @@ NES_CLK_period = 46 * 12
 #  constant AC97_CLK_period : time := 20.833333333333332 us; -- 48 kHz
 #  constant CLK_period : time := 46.560848137510206 ns; -- 21.477272 MhZ
 
+
+def APU_Main(
+		CLK,
+		PHI1_CE,
+		PHI2_CE,
+
+		Address,
+		Data_in,
+		Data_out,
+		RW10,
+
+		Interrupt,
+		PCM_out
+		):
+
+	Pulse1_CS = Signal(False)
+
+	pulse1 = APU_Pulse(CLK, PHI1_CE, Pulse1_CS, Address, Data_in, RW10, PCM_out)
+
+	@always_comb
+	def chipselect():
+		Pulse1_CS.next = Address in range(0x4000, 0x4004)
+
+	return pulse1
+
+	
+
 def APU_FrameCounter(
 		CLK,
 		APU_CE,
@@ -87,7 +114,7 @@ def APU_Envelope(
 
 def APU_Pulse(
 		CLK,
-		APU_CE,
+		PHI1_CE,
 
 		EnvelopeIn,
 		DutyCycleMode,

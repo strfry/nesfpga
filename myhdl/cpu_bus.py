@@ -1,5 +1,6 @@
 from myhdl import *
 
+
 class CPU_Bus(object):
 	def __init__(self, AddressWidth=16):
 		self.CLK = Signal(False)
@@ -7,19 +8,34 @@ class CPU_Bus(object):
 		self.PHI2 = Signal(False)
 		self.RW10 = Signal(True)
 
-		self.Address = Signal(intbv()[AddressWidth])
-		self.Data_out = Signal(intbv()[8])
-		self.Data_in =	Signal(intbv()[8])
+		self.Address = Signal(intbv()[AddressWidth:])
+		self.Data_out = Signal(intbv()[8:])
+		self.Data_in =	Signal(intbv()[8:])
 
 		self.Data_slaves = []
-		print instances()
-		self.instances = instances()
+
+		self.write_queue = []
+
+		@always(self.CLK.posedge)
+		def write_proc():
+			if self.PHI2:
+				if self.write_queue:
+					a, d = self.write_queue.pop(0)
+					self.Address.next = a
+					self.Data_out.next = d
+					self.RW10.next = 0
+				else:
+					self.RW10.next = 1
+
+		self.instances = write_proc
+			
 
 	def RegisterSlaveAddress():
 		assert False, "not implemented"
 
-	def instances():
-		return self.instances
+
+	def fake_write(self, address, data):
+		self.write_queue += [(address, data)]
 
 	
 
