@@ -1,0 +1,5 @@
+Conversion does not yet support class attribute signals
+
+http://referaat.cs.utwente.nl/conference/17/paper/7344/comparing-hardware-description-languages.pdf
+
+google scholar more on myhdl
