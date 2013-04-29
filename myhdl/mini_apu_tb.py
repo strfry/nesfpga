@@ -7,20 +7,15 @@ from myhdl import *
 from mini_apu import *
 from cpu_bus import CPU_Bus
 from ac97wav import AC97_WavWriter
+from clk_util import CLK_Gen
 
 
 NES_CLK_period = 46 # ns
 #  constant AC97_CLK_period : time := 20.833333333333332 us; -- 48 kHz
 #  constant CLK_period : time := 46.560848137510206 ns; -- 21.477272 MhZ
 
-def CLK_Gen(CLK, period):
-        @always(delay(period / 2))
-        def gen():
-                CLK.next = not CLK
-
-        return gen
-
 def APU_TB():
+	Pulse1_CS = Signal(False)
 	PCM = Signal(intbv()[8:])
 	cpu_bus = CPU_Bus()
 
@@ -33,11 +28,14 @@ def APU_TB():
         def ce():
                 cpu_bus.PHI2.next = CLK_cnt == 5
 		cpu_bus.PHI2.next = True
+		Pulse1_CS.next = cpu_bus.Address in range(0x4000, 0x4004)
+
+		
 
 	clk_gen = CLK_Gen(cpu_bus.CLK, NES_CLK_period * 12)
 	ac97 = AC97_WavWriter(PCM, "mini.wav")
-	apu = APU_Main(cpu_bus.CLK, cpu_bus.PHI2, cpu_bus.RW10,
-		cpu_bus.Address, cpu_bus.Data_write, PCM)
+	apu = APU_Pulse(cpu_bus.CLK, cpu_bus.PHI2, cpu_bus.RW10,
+		cpu_bus.Address, cpu_bus.Data_write, Pulse1_CS, PCM)
 
 
 	sweepTimer = Signal(intbv()[11:0])
@@ -59,7 +57,7 @@ def APU_TB():
 			import math
 			octave = int(math.log(frequency, 2))
 
-			yield delay(100000000 / (i+1))
+			yield delay(500000000 / (i+1))
 		raise StopSimulation
 
 		
@@ -69,7 +67,7 @@ def APU_TB():
 def convert():
 	cpu_bus = CPU_Bus()
 	pcm = Signal(intbv()[8])
-	toVHDL(APU_Main, cpu_bus.CLK, cpu_bus.PHI2, cpu_bus.RW10,
+	toVHDL(APU_Pulse, cpu_bus.CLK, cpu_bus.PHI2, cpu_bus.RW10,
 		cpu_bus.Address, cpu_bus.Data_write,
 		pcm)
 

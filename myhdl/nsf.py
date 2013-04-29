@@ -32,45 +32,47 @@ class NSFSoftCPU:
 	NES_CLK_period = 46 * 12
 
 	def __init__(self, filename):
-		self.nsf = NSFParser(bytearray(file("smb.nsf").read()))
+		self.nsf = NSFParser(bytearray(file(filename).read()))
 
 		# Set up Memory with Hooks
 		self.mem = ObservableMemory()
-		self.mem.write(nsf.load_addr, nsf.data)
-		self.cpu = MPU(mem)
+		self.mem.write(self.nsf.load_addr, self.nsf.data)
+		self.cpu = MPU(self.mem)
 		self.deltaCallTime = 0
-		self.totalCycles
+		self.totalCycles = 0
 
 	def subscribe_to_write(self, range, callback):
 		self.mem.subscribe_to_write(range, callback)
 
 	# Call NSF Init code
-	def setup():
+	def setup(self, start_song = -1):
+		if start_song == -1:
+			start_song = self.nsf.start_song - 1
+
 		# Push a special address -1 to the stack to implement function calls
 		self.cpu.stPushWord(0x1337 - 1)
 
 		# NSF Style init call
-		cpu.a = nsf.start_song - 1
-		cpu.x = 0
-		cpu.pc = nsf.init_addr
+		self.cpu.a = start_song
+		self.cpu.x = 0
+		self.cpu.pc = self.nsf.init_addr
 
-		while cpu.pc != 0x1337:
-			cpu.step()
-
+		while self.cpu.pc != 0x1337:
+			self.cpu.step()
 
 	# Execute 1 CPU Step, or wait to until enough cycles have passed
-	def play_cycle():
+	def play_cycle(self):
 		self.deltaCallTime = self.deltaCallTime + NES_CLK_period
 
 		check_frame()
-		if cpu.pc != 0x1337:
+		if self.cpu.pc != 0x1337:
 			self.totalCycles = self.totalCycles + 1
-			if self.totalCycles == cpu.processorCycles:
+			if self.totalCycles == self.cpu.processorCycles:
 				self.cpu.step()
 
 
 	# Internal: Check if frame is completed and restart it periodically
-	def check_frame():
+	def check_frame(self):
 		if self.cpu.pc == 0x1337:
 			frame_time = self.nsf.ntsc_ticks * 1000
 			if self.deltaCallTime >= frame_time:

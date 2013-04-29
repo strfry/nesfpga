@@ -9,11 +9,11 @@ def APU_Main(
 		CLK,
 		PHI1_CE,
 		PHI2_CE,
+		RW10,
 
 		Address,
-		Data_in,
-		Data_out,
-		RW10,
+		Data_read,
+		Data_write,
 
 		Interrupt,
 		PCM_out
@@ -21,7 +21,7 @@ def APU_Main(
 
 	Pulse1_CS = Signal(False)
 
-	pulse1 = APU_Pulse(CLK, PHI1_CE, Pulse1_CS, Address, Data_in, RW10, PCM_out)
+	pulse1 = APU_Pulse(CLK, PHI1_CE, Pulse1_CS, Address, Data_write, RW10, PCM_out)
 
 	@always_comb
 	def chipselect():
@@ -111,26 +111,18 @@ def APU_Envelope(
 
 
 
-
+"""
 def APU_Pulse(
-		CLK,
-		PHI1_CE,
-
-		EnvelopeIn,
-		DutyCycleMode,
-		TimerLoad,
-
-		PCM_OUT
+	CLK, PHI1_CE, RW10, Address, Data_write,
+	PCM_out
 	):
 	
-	note = 0x0FD
-
 	sequencer = Signal(intbv("00001111"))
 	timer = Signal(intbv(0))
 
 	@always(CLK.posedge)
 	def logic():
-		if APU_CE:
+		if PHI1_CE:
 			if timer == 0:
 				sequencer.next = concat(sequencer[0], sequencer[8:1])
 				PCM_OUT.next = EnvelopeIn if sequencer[0] else 0x00
@@ -139,6 +131,46 @@ def APU_Pulse(
 				timer.next = timer - 1
 
 	return logic
+"""
+
+def APU_Pulse(
+	CLK, PHI2, RW10, Address, Data_write,
+	ChipSelect,
+	PCM_out):
+
+	DutyCycle = Signal(intbv()[2:0])
+	LengthCounterHalt = Signal(False)
+	Envelope = Signal(intbv()[5:0])
+
+	TimerLoad = Signal(intbv()[11:0])
+
+	sequencer = Signal(intbv("00001111"))
+	timer = Signal(intbv()[11:0])
+
+	@always(CLK.posedge)
+	def logic():
+		if PHI2 and RW10 == 0:
+			if Address == 0x4000:
+				DutyCycle.next = Data_write[8:6]
+				LengthCounterHalt.next = Data_write[6]
+				Envelope.next = Data_write[5:0]
+			elif Address == 0x4001:
+				# Sweep unit unimplemented
+				pass
+			elif Address == 0x4002:
+				TimerLoad.next[8:0] = Data_write
+			elif Address == 0x4003:
+				TimerLoad.next[11:8] = Data_write[3:0]
+		if PHI2:
+			if timer == 0:
+				sequencer.next = concat(sequencer[0], sequencer[8:1])
+				PCM_out.next = 0xf if sequencer[0] else 0x00
+				#print sequencer
+				timer.next = TimerLoad
+			else:
+				timer.next = timer - 1
+	return logic
+
 
 def APU_Triangle(
 		CLK,

@@ -9,8 +9,8 @@ class CPU_Bus(object):
 		self.RW10 = Signal(True)
 
 		self.Address = Signal(intbv()[AddressWidth:])
-		self.Data_out = Signal(intbv()[8:])
-		self.Data_in =	Signal(intbv()[8:])
+		self.Data_write = Signal(intbv()[8:])
+		self.Data_read =	Signal(intbv()[8:])
 
 		self.Data_slaves = []
 
@@ -22,7 +22,7 @@ class CPU_Bus(object):
 				if self.write_queue:
 					a, d = self.write_queue.pop(0)
 					self.Address.next = a
-					self.Data_out.next = d
+					self.Data_write.next = d
 					self.RW10.next = 0
 				else:
 					self.RW10.next = 1
