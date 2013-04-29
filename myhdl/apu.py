@@ -19,13 +19,22 @@ def APU_Main(
 		PCM_out
 		):
 
+	APU_CE = Signal(False)
+	APU_CE_cnt = Signal(False)
+
 	Pulse1_CS = Signal(False)
 
-	pulse1 = APU_Pulse(CLK, PHI1_CE, RW10, Address, Data_write, Pulse1_CS, PCM_out)
+	pulse1 = APU_Pulse(CLK, APU_CE, RW10, Address, Data_write, Pulse1_CS, PCM_out)
+
+	@always(CLK.posedge)
+	def ce():
+		if PHI1_CE:
+			APU_CE_cnt.next = not APU_CE_cnt
 
 	@always_comb
 	def chipselect():
-		Pulse1_CS.next = Address in range(0x4000, 0x4004)
+		Pulse1_CS.next = 0x4000 <= Address and Address < 0x4004
+		APU_CE.next = PHI1_CE and APU_CE_cnt
 
 	return instances()
 
