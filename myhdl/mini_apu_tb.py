@@ -6,6 +6,7 @@
 from myhdl import *
 from mini_apu import *
 from cpu_bus import CPU_Bus
+from ac97wav import AC97_WavWriter
 
 
 NES_CLK_period = 46 # ns
@@ -18,26 +19,6 @@ def CLK_Gen(CLK, period):
                 CLK.next = not CLK
 
         return gen
-
-def AC97_WavWriter(PCM, filename):
-        import wave
-        outfile = wave.open(filename, 'w')
-        outfile.setnchannels(1)
-        outfile.setframerate(48000)
-        outfile.setsampwidth(1)
-
-	CLK = Signal()
-
-        AC97_CLK_period = 20833
-
-        ac97_clk_gen = CLK_Gen(CLK, AC97_CLK_period)
-
-        @always(CLK.posedge)
-        def writeSample():
-                outfile.writeframes(chr(int(PCM * 16)))
-
-        return ac97_clk_gen, writeSample
-
 
 def APU_TB():
 	PCM = Signal(intbv()[8:])
