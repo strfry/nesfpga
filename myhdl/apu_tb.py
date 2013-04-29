@@ -21,6 +21,8 @@ def APU_TB():
 	cpu_bus = CPU_Bus()
 
 	clk_gen = CLK_Gen(cpu_bus.CLK, NES_CLK_period * 12)
+	cpu_bus.PHI2 = Signal(True)
+
 	ac97 = AC97_WavWriter(PCM, "smb.wav")
 	apu = APU_Main(cpu_bus.CLK, Signal(True), cpu_bus.PHI2, cpu_bus.RW10,
 		cpu_bus.Address, cpu_bus.Data_read, cpu_bus.Data_write,
@@ -28,7 +30,13 @@ def APU_TB():
 
 	cpu = NSFSoftCPU("smb.nsf")
 	cpu.subscribe_to_write(range(0x4000, 0x4017), cpu_bus.fake_write)
+
+
 	cpu.setup()
+
+	@always(cpu_bus.CLK.posedge)
+	def cpu_step():
+		cpu.play_cycle()
 
 	return instances(), cpu_bus.instances
 

@@ -35,6 +35,7 @@ class CPU_Bus(object):
 
 
 	def fake_write(self, address, data):
+		print "Fake Write at $%04X: %02x" % (address, data)
 		self.write_queue += [(address, data)]
 
 	

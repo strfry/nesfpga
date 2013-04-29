@@ -21,13 +21,13 @@ def APU_Main(
 
 	Pulse1_CS = Signal(False)
 
-	pulse1 = APU_Pulse(CLK, PHI1_CE, Pulse1_CS, Address, Data_write, RW10, PCM_out)
+	pulse1 = APU_Pulse(CLK, PHI1_CE, RW10, Address, Data_write, Pulse1_CS, PCM_out)
 
 	@always_comb
 	def chipselect():
 		Pulse1_CS.next = Address in range(0x4000, 0x4004)
 
-	return pulse1
+	return instances()
 
 	
 
@@ -111,30 +111,8 @@ def APU_Envelope(
 
 
 
-"""
 def APU_Pulse(
-	CLK, PHI1_CE, RW10, Address, Data_write,
-	PCM_out
-	):
-	
-	sequencer = Signal(intbv("00001111"))
-	timer = Signal(intbv(0))
-
-	@always(CLK.posedge)
-	def logic():
-		if PHI1_CE:
-			if timer == 0:
-				sequencer.next = concat(sequencer[0], sequencer[8:1])
-				PCM_OUT.next = EnvelopeIn if sequencer[0] else 0x00
-				timer.next = TimerLoad
-			else:
-				timer.next = timer - 1
-
-	return logic
-"""
-
-def APU_Pulse(
-	CLK, PHI2, RW10, Address, Data_write,
+	CLK, APU_CE, RW10, Address, Data_write,
 	ChipSelect,
 	PCM_out):
 
@@ -149,19 +127,21 @@ def APU_Pulse(
 
 	@always(CLK.posedge)
 	def logic():
-		if PHI2 and RW10 == 0:
-			if Address == 0x4000:
+		if APU_CE and RW10 == 0 and ChipSelect:
+			if Address[2:0] == 0x0:
 				DutyCycle.next = Data_write[8:6]
 				LengthCounterHalt.next = Data_write[6]
 				Envelope.next = Data_write[5:0]
-			elif Address == 0x4001:
+			elif Address[2:0] == 0x1:
 				# Sweep unit unimplemented
 				pass
-			elif Address == 0x4002:
+			elif Address[2:0] == 0x2:
 				TimerLoad.next[8:0] = Data_write
-			elif Address == 0x4003:
+				print "new pulse timer period: ", TimerLoad.next
+			elif Address[2:0] == 0x3:
 				TimerLoad.next[11:8] = Data_write[3:0]
-		if PHI2:
+				print "new pulse timer period: ", TimerLoad.next
+		if APU_CE:
 			if timer == 0:
 				sequencer.next = concat(sequencer[0], sequencer[8:1])
 				PCM_out.next = 0xf if sequencer[0] else 0x00
@@ -169,7 +149,7 @@ def APU_Pulse(
 				timer.next = TimerLoad
 			else:
 				timer.next = timer - 1
-	return logic
+	return instances()
 
 
 def APU_Triangle(
@@ -191,8 +171,8 @@ def APU_Triangle(
 			if timer == 0:
 				sequencer.next = (sequencer + 1) % 32
 				PCM_OUT.next = lut[sequencer]
-				timer.next = TimerLoad
-				#timer.next = 0x0fd
+				#timer.next = TimerLoad
+				timer.next = 0x0fd
 			else:
 				timer.next = timer - 1
 

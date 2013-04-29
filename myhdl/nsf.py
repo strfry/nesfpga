@@ -62,9 +62,9 @@ class NSFSoftCPU:
 
 	# Execute 1 CPU Step, or wait to until enough cycles have passed
 	def play_cycle(self):
-		self.deltaCallTime = self.deltaCallTime + NES_CLK_period
+		self.deltaCallTime = self.deltaCallTime + self.NES_CLK_period
 
-		check_frame()
+		self.check_frame()
 		if self.cpu.pc != 0x1337:
 			self.totalCycles = self.totalCycles + 1
 			if self.totalCycles == self.cpu.processorCycles:
