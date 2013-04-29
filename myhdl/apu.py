@@ -4,7 +4,6 @@ NES_CLK_period = 46 * 12
 #  constant AC97_CLK_period : time := 20.833333333333332 us; -- 48 kHz
 #  constant CLK_period : time := 46.560848137510206 ns; -- 21.477272 MhZ
 
-
 def APU_Main(
 		CLK,
 		PHI1_CE,
@@ -23,8 +22,13 @@ def APU_Main(
 	APU_CE_cnt = Signal(False)
 
 	Pulse1_CS = Signal(False)
+	Pulse2_CS = Signal(False)
 
-	pulse1 = APU_Pulse(CLK, APU_CE, RW10, Address, Data_write, Pulse1_CS, PCM_out)
+	HalfFrame_CE = Signal(False)
+	QuarterFrame_CE = Signal(False)
+
+	frameCounter = APU_FrameCounter(CLK, APU_CE, RW10, Address, Data_write, HalfFrame_CE, QuarterFrame_CE, Interrupt)
+	pulse1 = APU_Pulse(CLK, APU_CE, RW10, Address, Data_write, Pulse2_CS, HalfFrame_CE, QuarterFrame_CE, PCM_out)
 
 	@always(CLK.posedge)
 	def ce():
@@ -34,6 +38,7 @@ def APU_Main(
 	@always_comb
 	def chipselect():
 		Pulse1_CS.next = 0x4000 <= Address and Address < 0x4004
+		Pulse2_CS.next = 0x4004 <= Address and Address < 0x4008
 		APU_CE.next = PHI1_CE and APU_CE_cnt
 
 	return instances()
@@ -41,93 +46,138 @@ def APU_Main(
 	
 
 def APU_FrameCounter(
-		CLK,
-		APU_CE,
-
-		Mode,
-		InterruptInhibit,
-
-		QuarterFrameOut,
-		HalfFrameOut,
-		InterruptFlagOut
-		):
+	CLK, APU_CE, RW10, Address, Data_write,
+	HalfFrame_CE, QuarterFrame_CE, Interrupt):
 
 	timer = Signal(intbv())
+	Mode = Signal(False)
+	InterruptInhibit = Signal(False)
 
 	@always(CLK.posedge)
 	def logic():
-		QuarterFrameOut.next = False
-		HalfFrameOut.next = False
+		if APU_CE and not RW10 and Address == 0x4017:
+			Mode.next = Data_write[7]
+			InterruptInhibit.next = Data_write[6]
+
+		QuarterFrame_CE.next = False
+		HalfFrame_CE.next = False
 
 		if APU_CE:
 			timer.next = timer + 1
 
 			if timer == 3728:
-				QuarterFrameOut.next = True
+				QuarterFrame_CE.next = True
 			elif timer == 7456:
-				HalfFrameOut.next = True
-				QuarterFrameOut.next = True
+				HalfFrame_CE.next = True
+				QuarterFrame_CE.next = True
 			elif timer == 11186:
-				QuarterFrameOut.next = True
+				QuarterFrame_CE.next = True
 			elif not Mode and timer == 14914:
-				HalfFrameOut.next = True
-				QuarterFrameOut.next = True
+				HalfFrame_CE.next = True
+				QuarterFrame_CE.next = True
 				timer.next = 0
 			elif Mode and timer == 18640:
-				HalfFrameOut.next = True
-				QuarterFrameOut.next = True
+				HalfFrame_CE.next = True
+				QuarterFrame_CE.next = True
 				timer.next = 0
 
-	return logic
+	return instances()
 
 
 def APU_Envelope(
 		CLK,
-		HalfFrame_CE,
+		QuarterFrame_CE,
 
 		StartFlag,
 		LoopFlag,
 		ConstantFlag,
 		
-		LengthCounterLoad,
 		VolumeDecay,
 
 		VolumeOut
 		):
 
-	timer = Signal(intbv()[4:0])
+	divider = Signal(intbv()[4:0])
+	volume = Signal(intbv()[4:0])
 
 	@always(CLK.posedge)
 	def logic():
-		if HalfFrame_CE:
+		if QuarterFrame_CE:
 			if StartFlag:
-				print "Start Envelope"
+				print "Start Envelope, length: ", VolumeDecay, " constant: ", ConstantFlag
 				StartFlag.next = False
 				VolumeOut.next = 15
-				timer.next = VolumeDecay
+				divider.next = VolumeDecay
 			else:
-				if timer == 0:
-					timer.next = VolumeDecay
+				if divider == 0:
+					divider.next = VolumeDecay
 					if VolumeOut != 0:
 						VolumeOut.next = VolumeOut - 1
 					else:
 						if LoopFlag:
 							VolumeOut.next = 15						
 				else:
-					timer.next = timer - 1
+					divider.next = divider - 1
+			if ConstantFlag:
+				VolumeOut.next = VolumeDecay
 
 	return logic
 
+def LengthCounter(
+	CLK, APU_CE, RW10, Address, Data_write,
+	ChipSelect, HalfFrame_CE, Enable_out
+	):
 
+	LengthCounter = Signal(intbv()[8:0])
+	LengthCounterHalt = Signal(False)
+
+	# Lookup Table for Length Counter values
+	LC_lut = [
+		10, 254, 20,  2, 40,  4, 80,  6,
+		160,  8, 60, 10, 14, 12, 26, 14,
+		12, 16, 24, 18, 48, 20, 96, 22,
+		192, 24, 72, 26, 16, 28, 32, 30
+	]
+
+	@always(CLK.posedge)
+	def logic():
+		if APU_CE and RW10 == 0 and ChipSelect:
+			if Address[2:0] == 0x0:
+				LengthCounterHalt.next = Data_write[5]
+			elif Address[2:0] == 0x3:
+				print "xOxOx Length Counter write ", Data_write[8:3], "/", LC_lut[Data_write[8:3]]
+				LengthCounter.next = LC_lut[Data_write[8:3]]
+		
+		if HalfFrame_CE:
+			print LengthCounter
+			if LengthCounter and not LengthCounterHalt:
+				LengthCounter.next = LengthCounter - 1
+
+	@always_comb
+	def comb():
+		Enable_out.next = LengthCounter > 0
+
+	return instances()
 
 def APU_Pulse(
 	CLK, APU_CE, RW10, Address, Data_write,
-	ChipSelect,
+	ChipSelect, HalfFrame_CE, QuarterFrame_CE,
 	PCM_out):
 
+	lengthCounterEnable = Signal(False)
+
+	lengthCounter = LengthCounter(CLK, APU_CE, RW10, Address, Data_write, ChipSelect, HalfFrame_CE, lengthCounterEnable)
+
 	DutyCycle = Signal(intbv()[2:0])
-	LengthCounterHalt = Signal(False)
-	Envelope = Signal(intbv()[5:0])
+
+	EnvelopeDecay = Signal(intbv()[4:0])
+	EnvelopeConstantFlag = Signal(False)
+	EnvelopeStartFlag = Signal(False)
+	EnvelopeVolume = Signal(intbv()[4:0])
+
+	envelope = APU_Envelope(CLK, QuarterFrame_CE,
+		EnvelopeStartFlag, Signal(False), EnvelopeConstantFlag,
+                EnvelopeDecay, EnvelopeVolume)	
 
 	TimerLoad = Signal(intbv()[11:0])
 
@@ -139,8 +189,8 @@ def APU_Pulse(
 		if APU_CE and RW10 == 0 and ChipSelect:
 			if Address[2:0] == 0x0:
 				DutyCycle.next = Data_write[8:6]
-				LengthCounterHalt.next = Data_write[6]
-				Envelope.next = Data_write[5:0]
+				EnvelopeConstantFlag.next = Data_write[4]
+				EnvelopeDecay.next = Data_write[4:0]
 			elif Address[2:0] == 0x1:
 				# Sweep unit unimplemented
 				pass
@@ -148,12 +198,15 @@ def APU_Pulse(
 				TimerLoad.next[8:0] = Data_write
 				print "new pulse timer period: ", TimerLoad.next
 			elif Address[2:0] == 0x3:
+				EnvelopeStartFlag.next = True
 				TimerLoad.next[11:8] = Data_write[3:0]
 				print "new pulse timer period: ", TimerLoad.next
 		if APU_CE:
 			if timer == 0:
 				sequencer.next = concat(sequencer[0], sequencer[8:1])
-				PCM_out.next = 0xf if sequencer[0] else 0x00
+				PCM_out.next = EnvelopeVolume if sequencer[0] else 0x00
+				if not lengthCounterEnable:
+					PCM_out.next = 0
 				#print sequencer
 				timer.next = TimerLoad
 			else:
