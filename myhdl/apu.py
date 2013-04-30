@@ -24,6 +24,7 @@ def APU_Main(
 	Pulse1_CS = Signal(False)
 	Pulse2_CS = Signal(False)
 	Noise_CS = Signal(False)
+	Triangle_CS = Signal(False)
 
 	HalfFrame_CE = Signal(False)
 	QuarterFrame_CE = Signal(False)
@@ -31,11 +32,13 @@ def APU_Main(
 	PCM_pulse1 = Signal(intbv()[4:0])
 	PCM_pulse2 = Signal(intbv()[4:0])
 	PCM_noise = Signal(intbv()[4:0])
+	PCM_triangle = Signal(intbv()[4:0])
 
 	frameCounter = APU_FrameCounter(CLK, APU_CE, RW10, Address, Data_write, HalfFrame_CE, QuarterFrame_CE, Interrupt)
 	pulse1 = APU_Pulse(CLK, APU_CE, RW10, Address, Data_write, Pulse1_CS, HalfFrame_CE, QuarterFrame_CE, PCM_pulse1)
 	pulse2 = APU_Pulse(CLK, APU_CE, RW10, Address, Data_write, Pulse2_CS, HalfFrame_CE, QuarterFrame_CE, PCM_pulse2)
 	noise = APU_Noise(CLK, APU_CE, RW10, Address, Data_write, Noise_CS, HalfFrame_CE, QuarterFrame_CE, PCM_noise)
+	#triangle = APU_Triangle(CLK, APU_CE, RW10, Address, Data_write, Triangle_CS, HalfFrame_CE, QuarterFrame_CE, PCM_Triangle)
 
 	@always(CLK.posedge)
 	def ce():
@@ -46,6 +49,7 @@ def APU_Main(
 	def chipselect():
 		Pulse1_CS.next = 0x4000 <= Address and Address < 0x4004
 		Pulse2_CS.next = 0x4004 <= Address and Address < 0x4008
+		Triangle_CS.next = 0x4008 <= Address and Address < 0x400C
 		Noise_CS.next = 0x400C <= Address and Address < 0x4010
 		APU_CE.next = PHI1_CE and APU_CE_cnt
 
@@ -308,13 +312,13 @@ def APU_Noise(
 				LengthCounterLoadFlag.next = True
 		if APU_CE:
 			if timer == 0:
-				fb_bit = lfsr[1]
+				fb_bit = bool(lfsr[1])
 				if LFSRMode:
 					fb_bit = lfsr[6]
-				fb_bit = lfsr[0] ^ (fb_bit)
+				lfsr.next = concat(fb_bit ^ lfsr[0], lfsr[15:1])
 				# This is the simple version, the MyHDL convertor does not like it
 				#fb_bit = lfsr[0] ^ (lfsr[6] if LFSRMode else lfsr[1])
-				lfsr.next = concat(fb_bit, lfsr[15:1])
+				#lfsr.next = concat(fb_bit, lfsr[15:1])
 				PCM_out.next = EnvelopeVolume if lfsr[0] and lengthCounterEnable else 0x00
 				timer.next = timer_lut[TimerLoad]
 			else:
@@ -323,14 +327,10 @@ def APU_Noise(
 	return instances()
 
 
-def APU_Triangle(
-		CLK,
-		APU_CE,
-
-		TimerLoad,
-
-		PCM_OUT
-		):
+def APU_Triangle(				
+	CLK, APU_CE, RW10, Address, Data_write,
+	ChipSelect, HalfFrame_CE, QuarterFrame_CE,
+	PCM_out):
 	
 	lut = (15, 14, 13, 12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0, 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15)
 	sequencer = Signal(0)
@@ -338,12 +338,25 @@ def APU_Triangle(
 
 	@always(CLK.posedge)
 	def logic():
+		LengthCounterLoadFlag.next = False
+
+		if APU_CE and RW10 == 0 and ChipSelect:
+			if Address[2:0] == 0x0:
+				LengthCounterHalt.next = Data_write[7]
+				EnvelopeConstantFlag.next = Data_write[4]
+				EnvelopeDecay.next = Data_write[4:0]
+			elif Address[2:0] == 0x2:
+				TimerLoad.next[8:0] = Data_write
+			elif Address[2:0] == 0x3:
+				TimerLoad.next[11:8] = Data_write[3:0]
+				LengthCounterLoad.next = Data_write[8:3]
+				LengthCounterLoadFlag.next = True
+
 		if APU_CE:
 			if timer == 0:
 				sequencer.next = (sequencer + 1) % 32
-				PCM_OUT.next = lut[sequencer]
-				#timer.next = TimerLoad
-				timer.next = 0x0fd
+				PCM_out.next = lut[sequencer]
+				timer.next = TimerLoad
 			else:
 				timer.next = timer - 1
 	return instances()
