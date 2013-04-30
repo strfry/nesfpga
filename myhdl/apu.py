@@ -114,7 +114,7 @@ def APU_Envelope(
 	def logic():
 		if QuarterFrame_CE:
 			if StartFlag:
-				print "Start Envelope, length: ", VolumeDecay, " constant: ", ConstantFlag
+				#print "Start Envelope, length: ", VolumeDecay, " constant: ", ConstantFlag
 				volume.next = 15
 				divider.next = VolumeDecay
 			else:
@@ -163,7 +163,6 @@ def LengthCounter(
 				LengthCounter.next = LC_lut[Data_write[8:3]]
 		
 		if HalfFrame_CE:
-			print LengthCounter
 			if LengthCounter > 0 and not LengthCounterHalt:
 				LengthCounter.next = LengthCounter - 1
 
@@ -213,18 +212,15 @@ def APU_Pulse(
 				pass
 			elif Address[2:0] == 0x2:
 				TimerLoad.next[8:0] = Data_write
-				print "new pulse timer period: ", TimerLoad.next
 			elif Address[2:0] == 0x3:
 				EnvelopeStartFlag.next = True
 				TimerLoad.next[11:8] = Data_write[3:0]
-				print "new pulse timer period: ", TimerLoad.next
 		if APU_CE:
 			if timer == 0:
 				sequencer.next = concat(sequencer[0], sequencer[8:1])
 				PCM_out.next = EnvelopeVolume if sequencer[0] else 0x00
 				if not lengthCounterEnable:
 					PCM_out.next = 0
-				#print sequencer
 				timer.next = TimerLoad
 			else:
 				timer.next = timer - 1
@@ -250,7 +246,6 @@ def LengthCounter2(
 	def logic():
 		if HalfFrame_CE:
 			if LengthCounter > 0 and not LengthCounterHalt:
-				print LengthCounter
 				LengthCounter.next = LengthCounter - 1
 		
 		if LengthCounterLoadFlag:
@@ -304,7 +299,6 @@ def APU_Noise(
 				LengthCounterHalt.next = Data_write[5]
 				EnvelopeConstantFlag.next = Data_write[4]
 				EnvelopeDecay.next = Data_write[4:0]
-				print "Noise Envelope config: Constant:", EnvelopeConstantFlag.next, "Decay: ", EnvelopeDecay.next
 			elif Address[2:0] == 0x2:
 				LFSRMode.next = Data_write[7]
 				TimerLoad.next[4:0] = Data_write[4:0]
