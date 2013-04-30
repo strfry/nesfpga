@@ -32,7 +32,7 @@ def APU_TB():
 	cpu.subscribe_to_write(range(0x4000, 0x4017), cpu_bus.fake_write)
 
 
-	cpu.setup()
+	cpu.setup(1)
 
 	@always(cpu_bus.CLK.posedge)
 	def cpu_step():
@@ -49,5 +49,5 @@ def convert():
 		cpu_bus.Address, cpu_bus.Data_read, cpu_bus.Data_write,
 		interrupt, pcm)
 
-convert()
-#Simulation(APU_TB()).run()
+#convert()
+Simulation(APU_TB()).run()

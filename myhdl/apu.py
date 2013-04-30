@@ -38,7 +38,7 @@ def APU_Main(
 	pulse1 = APU_Pulse(CLK, APU_CE, RW10, Address, Data_write, Pulse1_CS, HalfFrame_CE, QuarterFrame_CE, PCM_pulse1)
 	pulse2 = APU_Pulse(CLK, APU_CE, RW10, Address, Data_write, Pulse2_CS, HalfFrame_CE, QuarterFrame_CE, PCM_pulse2)
 	noise = APU_Noise(CLK, APU_CE, RW10, Address, Data_write, Noise_CS, HalfFrame_CE, QuarterFrame_CE, PCM_noise)
-	#triangle = APU_Triangle(CLK, APU_CE, RW10, Address, Data_write, Triangle_CS, HalfFrame_CE, QuarterFrame_CE, PCM_Triangle)
+	triangle = APU_Triangle(CLK, APU_CE, RW10, Address, Data_write, Triangle_CS, HalfFrame_CE, QuarterFrame_CE, PCM_triangle)
 
 	@always(CLK.posedge)
 	def ce():
@@ -53,7 +53,7 @@ def APU_Main(
 		Noise_CS.next = 0x400C <= Address and Address < 0x4010
 		APU_CE.next = PHI1_CE and APU_CE_cnt
 
-		PCM_out.next = PCM_pulse1 + PCM_pulse2 + PCM_noise
+		PCM_out.next = PCM_pulse1 + PCM_pulse2 + PCM_noise + PCM_triangle
 
 	return instances()
 
@@ -336,15 +336,34 @@ def APU_Triangle(
 	sequencer = Signal(0)
 	timer = Signal(intbv(0))
 
+	linearCounter = Signal(intbv()[7:0])
+	linearCounterLoad = Signal(intbv()[7:0])
+
+	LengthCounterHalt = Signal(False)
+	LengthCounterLoadFlag = Signal(False)
+	LengthCounterLoad = Signal(intbv()[5:0])
+	LengthCounterGate = Signal(False)
+
+	TimerLoad = Signal(intbv())
+
+
+	lengthCounter = LengthCounter2(CLK, HalfFrame_CE, LengthCounterHalt, LengthCounterLoad, LengthCounterLoadFlag, LengthCounterGate)
+
 	@always(CLK.posedge)
 	def logic():
+		if QuarterFrame_CE:
+			if LengthCounterHalt:
+				linearCounter.next = linearCounterLoad
+			elif linearCounter > 0:
+				linearCounter.next = linearCounter - 1
+
+
 		LengthCounterLoadFlag.next = False
 
 		if APU_CE and RW10 == 0 and ChipSelect:
 			if Address[2:0] == 0x0:
 				LengthCounterHalt.next = Data_write[7]
-				EnvelopeConstantFlag.next = Data_write[4]
-				EnvelopeDecay.next = Data_write[4:0]
+				linearCounterLoad.next = Data_write[7:0]
 			elif Address[2:0] == 0x2:
 				TimerLoad.next[8:0] = Data_write
 			elif Address[2:0] == 0x3:
@@ -355,7 +374,10 @@ def APU_Triangle(
 		if APU_CE:
 			if timer == 0:
 				sequencer.next = (sequencer + 1) % 32
-				PCM_out.next = lut[sequencer]
+				if LengthCounterGate and linearCounter > 0:
+					PCM_out.next = lut[sequencer]
+				else:
+					PCM_out= 0
 				timer.next = TimerLoad
 			else:
 				timer.next = timer - 1
