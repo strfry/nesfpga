@@ -27,8 +27,12 @@ def APU_Main(
 	HalfFrame_CE = Signal(False)
 	QuarterFrame_CE = Signal(False)
 
+	PCM_pulse1 = Signal(intbv())
+	PCM_pulse2 = Signal(intbv())
+
 	frameCounter = APU_FrameCounter(CLK, APU_CE, RW10, Address, Data_write, HalfFrame_CE, QuarterFrame_CE, Interrupt)
-	pulse1 = APU_Pulse(CLK, APU_CE, RW10, Address, Data_write, Pulse2_CS, HalfFrame_CE, QuarterFrame_CE, PCM_out)
+	pulse1 = APU_Pulse(CLK, APU_CE, RW10, Address, Data_write, Pulse1_CS, HalfFrame_CE, QuarterFrame_CE, PCM_pulse1)
+	pulse2 = APU_Pulse(CLK, APU_CE, RW10, Address, Data_write, Pulse2_CS, HalfFrame_CE, QuarterFrame_CE, PCM_pulse2)
 
 	@always(CLK.posedge)
 	def ce():
@@ -40,6 +44,8 @@ def APU_Main(
 		Pulse1_CS.next = 0x4000 <= Address and Address < 0x4004
 		Pulse2_CS.next = 0x4004 <= Address and Address < 0x4008
 		APU_CE.next = PHI1_CE and APU_CE_cnt
+
+		PCM_out.next = PCM_pulse1 + PCM_pulse2
 
 	return instances()
 
@@ -106,22 +112,28 @@ def APU_Envelope(
 			if StartFlag:
 				print "Start Envelope, length: ", VolumeDecay, " constant: ", ConstantFlag
 				StartFlag.next = False
-				VolumeOut.next = 15
+				volume.next = 15
 				divider.next = VolumeDecay
 			else:
 				if divider == 0:
 					divider.next = VolumeDecay
-					if VolumeOut != 0:
-						VolumeOut.next = VolumeOut - 1
+					if volume != 0:
+						volume.next = volume - 1
 					else:
 						if LoopFlag:
-							VolumeOut.next = 15						
+							volume.next = 15						
 				else:
 					divider.next = divider - 1
-			if ConstantFlag:
-				VolumeOut.next = VolumeDecay
 
-	return logic
+	@always_comb
+	def comb():
+		if ConstantFlag:
+			VolumeOut.next = VolumeDecay
+		else:
+			VolumeOut.next = volume
+				
+
+	return instances()
 
 def LengthCounter(
 	CLK, APU_CE, RW10, Address, Data_write,

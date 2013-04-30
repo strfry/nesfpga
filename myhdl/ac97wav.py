@@ -17,7 +17,10 @@ def AC97_WavWriter(PCM, filename):
 
         @always(CLK.posedge)
         def writeSample():
-                outfile.writeframes(chr(int(PCM) * 16))
+		# Pack as signed byte
+		import struct
+		outfile.writeframes(struct.pack('b', PCM - 127))
+                #outfile.writeframes(chr(int(PCM - 127) * 4 + ))
 
         return ac97_clk_gen, writeSample
 
