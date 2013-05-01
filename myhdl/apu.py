@@ -142,48 +142,10 @@ def APU_Envelope(
 
 	return instances()
 
-def LengthCounter(
-	CLK, APU_CE, RW10, Address, Data_write,
-	ChipSelect, HalfFrame_CE, Enable_out
-	):
-
-	LengthCounter = Signal(intbv()[8:0])
-	LengthCounterHalt = Signal(False)
-
-	# Lookup Table for Length Counter values
-	LC_lut = (
-		10, 254, 20,  2, 40,  4, 80,  6,
-		160,  8, 60, 10, 14, 12, 26, 14,
-		12, 16, 24, 18, 48, 20, 96, 22,
-		192, 24, 72, 26, 16, 28, 32, 30
-	)
-
-	@always(CLK.posedge)
-	def logic():
-		if APU_CE and RW10 == 0 and ChipSelect:
-			if Address[2:0] == 0x0:
-				LengthCounterHalt.next = Data_write[5]
-			elif Address[2:0] == 0x3:
-				LengthCounter.next = LC_lut[Data_write[8:3]]
-		
-		if HalfFrame_CE:
-			if LengthCounter > 0 and not LengthCounterHalt:
-				LengthCounter.next = LengthCounter - 1
-
-	@always_comb
-	def comb():
-		Enable_out.next = LengthCounter > 0
-
-	return instances()
-
 def APU_Pulse(
 	CLK, APU_CE, RW10, Address, Data_write,
 	ChipSelect, HalfFrame_CE, QuarterFrame_CE,
 	PCM_out):
-
-	lengthCounterEnable = Signal(False)
-
-	lengthCounter = LengthCounter(CLK, APU_CE, RW10, Address, Data_write, ChipSelect, HalfFrame_CE, lengthCounterEnable)
 
 	DutyCycle = Signal(intbv()[2:0])
 
@@ -191,7 +153,13 @@ def APU_Pulse(
 	EnvelopeConstantFlag = Signal(False)
 	EnvelopeStartFlag = Signal(False)
 	EnvelopeVolume = Signal(intbv()[4:0])
+	
+	LengthCounterHalt = Signal(False)
+	LengthCounterLoadFlag = Signal(False)
+	LengthCounterLoad = Signal(intbv()[5:0])
+	LengthCounterGate = Signal(False)
 
+	lengthCounter = LengthCounter(CLK, HalfFrame_CE, LengthCounterHalt, LengthCounterLoad, LengthCounterLoadFlag, LengthCounterGate)
 	envelope = APU_Envelope(CLK, QuarterFrame_CE,
 		EnvelopeStartFlag, Signal(False), EnvelopeConstantFlag,
                 EnvelopeDecay, EnvelopeVolume)	
@@ -205,6 +173,8 @@ def APU_Pulse(
 	def logic():
 		if QuarterFrame_CE:
 			EnvelopeStartFlag.next = False
+		
+		LengthCounterLoadFlag.next = False
 
 		if APU_CE and RW10 == 0 and ChipSelect:
 			if Address[2:0] == 0x0:
@@ -219,18 +189,20 @@ def APU_Pulse(
 			elif Address[2:0] == 0x3:
 				EnvelopeStartFlag.next = True
 				TimerLoad.next[11:8] = Data_write[3:0]
+				LengthCounterLoad.next = Data_write[8:3]
+				LengthCounterLoadFlag.next = True
 		if APU_CE:
 			if timer == 0:
 				sequencer.next = concat(sequencer[0], sequencer[8:1])
 				PCM_out.next = EnvelopeVolume if sequencer[0] else 0x00
-				if not lengthCounterEnable:
+				if not LengthCounterGate:
 					PCM_out.next = 0
 				timer.next = TimerLoad
 			else:
 				timer.next = timer - 1
 	return instances()
 
-def LengthCounter2(
+def LengthCounter(
 	CLK, HalfFrame_CE,
 	LengthCounterHalt, LengthCounterLoad, LengthCounterLoadFlag,
 	Enable_out
@@ -276,17 +248,14 @@ def APU_Noise(
 	LengthCounterHalt = Signal(False)
 	LengthCounterLoadFlag = Signal(False)
 	LengthCounterLoad = Signal(intbv()[5:0])
-
-	lengthCounterEnable = Signal(False)
-
-	DutyCycle = Signal(intbv()[2:0])
+	LengthCounterGate = Signal(False)
 
 	EnvelopeDecay = Signal(intbv()[4:0])
 	EnvelopeConstantFlag = Signal(False)
 	EnvelopeStartFlag = Signal(False)
 	EnvelopeVolume = Signal(intbv()[4:0])
 
-	lengthCounter = LengthCounter2(CLK, HalfFrame_CE, LengthCounterHalt, LengthCounterLoad, LengthCounterLoadFlag, lengthCounterEnable)
+	lengthCounter = LengthCounter(CLK, HalfFrame_CE, LengthCounterHalt, LengthCounterLoad, LengthCounterLoadFlag, LengthCounterGate)
 	envelope = APU_Envelope(CLK, QuarterFrame_CE, EnvelopeStartFlag, Signal(False), EnvelopeConstantFlag,
                 EnvelopeDecay, EnvelopeVolume)	
 
@@ -319,7 +288,7 @@ def APU_Noise(
 				# This is the simple version, the MyHDL convertor does not like it
 				#fb_bit = lfsr[0] ^ (lfsr[6] if LFSRMode else lfsr[1])
 				#lfsr.next = concat(fb_bit, lfsr[15:1])
-				PCM_out.next = EnvelopeVolume if lfsr[0] and lengthCounterEnable else 0x00
+				PCM_out.next = EnvelopeVolume if lfsr[0] and LengthCounterGate else 0x00
 				timer.next = timer_lut[TimerLoad]
 			else:
 				timer.next = timer - 1
@@ -333,8 +302,8 @@ def APU_Triangle(
 	PCM_out):
 	
 	lut = (15, 14, 13, 12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0, 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15)
-	sequencer = Signal(0)
-	timer = Signal(intbv(0))
+	sequencer = Signal(intbv()[5:0])
+	timer = Signal(intbv(0)[11:0])
 
 	linearCounter = Signal(intbv()[7:0])
 	linearCounterLoad = Signal(intbv()[7:0])
@@ -344,10 +313,10 @@ def APU_Triangle(
 	LengthCounterLoad = Signal(intbv()[5:0])
 	LengthCounterGate = Signal(False)
 
-	TimerLoad = Signal(intbv())
+	TimerLoad = Signal(intbv()[11:0])
 
 
-	lengthCounter = LengthCounter2(CLK, HalfFrame_CE, LengthCounterHalt, LengthCounterLoad, LengthCounterLoadFlag, LengthCounterGate)
+	lengthCounter = LengthCounter(CLK, HalfFrame_CE, LengthCounterHalt, LengthCounterLoad, LengthCounterLoadFlag, LengthCounterGate)
 
 	@always(CLK.posedge)
 	def logic():
@@ -377,7 +346,7 @@ def APU_Triangle(
 				if LengthCounterGate and linearCounter > 0:
 					PCM_out.next = lut[sequencer]
 				else:
-					PCM_out= 0
+					PCM_out.next = 0
 				timer.next = TimerLoad
 			else:
 				timer.next = timer - 1
