@@ -11,14 +11,3 @@ def file_rom(clk, address, data, CONTENT):
 
 	return logic
 
-def convert():
-	clk = Signal(bool())
-	a = Signal(intbv()[13:0])
-	d = Signal(intbv()[8:0])
-
-	toVHDL(file_rom, clk, a, d, rom)
-	#conversion.analyze(file_rom, clk, a, d)
-	
-
-
-convert()

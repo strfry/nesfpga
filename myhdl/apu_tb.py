@@ -52,8 +52,8 @@ def convert():
 	cpu_bus = CPU_Bus()
 	phi1 = Signal(False)
 	interrupt = Signal(False)
-	pcm = Signal(intbv()[8])
-	toVHDL(APU_Main, cpu_bus.CLK, phi1, cpu_bus.PHI2, cpu_bus.RW10,
+	pcm = Signal(intbv()[8:0])
+	toVerilog(APU_Main, cpu_bus.CLK, phi1, cpu_bus.PHI2, cpu_bus.RW10,
 		cpu_bus.Address, cpu_bus.Data_read, cpu_bus.Data_write,
 		interrupt, pcm)
 

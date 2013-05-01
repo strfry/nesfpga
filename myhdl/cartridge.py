@@ -20,7 +20,7 @@ def CartridgeROM(
 		):
 
 	PRG = file_rom(CLK, PRG_Address, PRG_Data, rom_prg)
-	CHR = file_rom(CLK, CHR_Address, CHR_Data, rom_chr[13:0])
+	CHR = file_rom(CLK, CHR_Address, CHR_Data, rom_chr)
 
 	return PRG, CHR
 
@@ -34,8 +34,7 @@ def convert():
 	chr_address = Signal(intbv()[14:0])
 	chr_data = Signal(intbv()[8:0])
 
-	toVHDL(CartridgeROM, clk, rstn, prg_address, prg_data, chr_address, chr_data)
-	#conversion.analyze(file_rom, clk, a, d, rom)
+	toVerilog(CartridgeROM, clk, rstn, prg_address, prg_data, chr_address, chr_data)
 	
 
 
