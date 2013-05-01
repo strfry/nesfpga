@@ -1,0 +1,22 @@
+Fix various synthesis warnings
+	SpriteOverflow Flag is apparently unused
+
+APU Details
+	Pulse Sweep (Candidate for student implementation)
+	Status Registers
+	Interrupts
+	DMC
+
+Graphic Glitches:
+	Sprite Y Flip
+	Wrong attributes in second column
+	Border Glitch / Nicer blending
+	
+
+
+Interesting Demonstration tool: put some graphic/audio feature enables to switches
+	Halt and single frame stepping
+	Advanced: Manual Scrolling with joypad
+	
+Infrastructure for mapper support
+	Idea: Use mappers for design partitioning and partial reconfiguration
