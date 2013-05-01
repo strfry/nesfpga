@@ -10,10 +10,18 @@ from ac97wav import AC97_WavWriter
 from clk_util import CLK_Gen
 from nsf import NSFSoftCPU
 
-
 NES_CLK_period = 46 # ns
 #  constant AC97_CLK_period : time := 20.833333333333332 us; -- 48 kHz
 #  constant CLK_period : time := 46.560848137510206 ns; -- 21.477272 MhZ
+
+import sys
+import os
+
+assert len(sys.argv) >= 2, "Usage: {} FILE.NSF [SONGNUMBER]".format(sys.argv[0])
+rom_filename = sys.argv[1]
+base_filename, _ = os.path.splitext(rom_filename)
+start_song = 0 if len(sys.argv) < 3 else sys.argv[2]
+wav_filename = "output/{}-{}.wav".format(base_filename, start_song)
 
 def APU_TB():
 	APU_Interrupt = Signal(False)
@@ -23,16 +31,16 @@ def APU_TB():
 	clk_gen = CLK_Gen(cpu_bus.CLK, NES_CLK_period * 12)
 	cpu_bus.PHI2 = Signal(True)
 
-	ac97 = AC97_WavWriter(PCM, "smb.wav")
+	ac97 = AC97_WavWriter(PCM, wav_filename)
 	apu = APU_Main(cpu_bus.CLK, Signal(True), cpu_bus.PHI2, cpu_bus.RW10,
 		cpu_bus.Address, cpu_bus.Data_read, cpu_bus.Data_write,
 		APU_Interrupt, PCM)
 
-	cpu = NSFSoftCPU("smb.nsf")
+	cpu = NSFSoftCPU(rom_filename)
 	cpu.subscribe_to_write(range(0x4000, 0x4017), cpu_bus.fake_write)
 
 
-	cpu.setup(1)
+	cpu.setup(int(start_song))
 
 	@always(cpu_bus.CLK.posedge)
 	def cpu_step():
