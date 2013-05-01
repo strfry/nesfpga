@@ -21,12 +21,13 @@ entity ac97_output is
     AUDSDI : in  STD_LOGIC;
     AUDSDO : out  STD_LOGIC;
     AUDSYNC : out  STD_LOGIC;
-    AUDRST : out  STD_LOGIC);
+    AUDRST : out  STD_LOGIC;
 
     -- Asynchronous PCM Input
     PCM_in_left : in std_logic_vector(15 downto 0);
     PCM_in_right: in std_logic_vector(15 downto	0)
-end ac97_top;
+	 );
+end ac97_output;
 
 -- ///////////////////////////////////////////////
 -- //                ATTENTION!!!               //
@@ -65,15 +66,15 @@ begin
 	--  this process can be replaced with a user component for signal processing 
 	-------------------------------------------------------------------------------
   
-	process ( clk, rstn, L_bus_out, R_bus_out)
+	process ( clk, rstn, L_bus_out, R_bus_out, PCM_in_left, PCM_in_right)
 	begin
 		if (clk'event and clk = '1') then
 			if rstn = '0' then
 				L_bus <= (others => '0');
 				R_bus <= (others => '0');
 			elsif(ready = '1') then
-				L_bus <= std_logic_vector(PCM_in_left);
-				R_bus <= std_logic_vector(PCM_in_right);
+				L_bus <= std_logic_vector(PCM_in_left) & "00";
+				R_bus <= std_logic_vector(PCM_in_right) & "00";
 			end if;
 		end if;
 	end process;

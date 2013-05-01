@@ -19,6 +19,12 @@ entity Genesys_NES is
     HDMISCL   : inout std_logic;
     HDMISDA   : inout std_logic;
     HDMIRSTN  : out   std_logic;
+	 
+	 AUDCLK : in  STD_LOGIC;
+    AUDSDI : in  STD_LOGIC;
+    AUDSDO : out  STD_LOGIC;
+    AUDSYNC : out  STD_LOGIC;
+    AUDRST : out  STD_LOGIC;
 
     BTN : in std_logic_vector(6 downto 0);
     SW  : in std_logic_vector(7 downto 0)
@@ -36,6 +42,8 @@ architecture Behavioral of Genesys_NES is
       FB_Address : out unsigned(15 downto 0);  -- linear index in 256x240 pixel framebuffer
       FB_Color   : out std_logic_vector(5 downto 0);  -- Palette index of current color
       FB_DE      : out std_logic;  -- True when PPU is writing to the framebuffer
+		
+		APU_PCM : out std_logic_vector(7 downto 0);
 
       -- Controller input
       Controller_Strobe : out std_logic;  -- Set shift register in controller with current buttons
@@ -52,6 +60,25 @@ architecture Behavioral of Genesys_NES is
 
       PinWithoutSemicolon : out std_logic
       );
+  end component;
+  
+  component AC97_Output is
+  port (
+    CLK : in std_logic; -- 100 MHz Clock
+    RSTN : in std_logic;
+    
+    -- AC97 Ports
+      
+    BITCLK : in  STD_LOGIC;
+    AUDSDI : in  STD_LOGIC;
+    AUDSDO : out  STD_LOGIC;
+    AUDSYNC : out  STD_LOGIC;
+    AUDRST : out  STD_LOGIC;
+
+    -- Asynchronous PCM Input
+    PCM_in_left : in std_logic_vector(15 downto 0);
+    PCM_in_right: in std_logic_vector(15 downto	0)
+  );
   end component;
 
 
@@ -74,6 +101,8 @@ architecture Behavioral of Genesys_NES is
 
   signal fb_ram : fb_ram_type := (others => "101010");
 
+  signal APU_PCM : std_logic_vector(7 downto 0);
+  signal AC97_PCM : std_logic_vector(15 downto 0);
 
   signal Controller_Strobe : std_logic;
   signal Controller1_Clock : std_logic;
@@ -141,13 +170,15 @@ begin
   
   
 
-  uut : NES_Mainboard port map (
+  nes : NES_Mainboard port map (
     clk  => NES_Clock,
     rstn => RSTN,
 
     FB_Address => FB_Address,
     FB_Color   => FB_Color,
     FB_DE      => FB_DE,
+	 
+	 APU_PCM		=> APU_PCM,
 
     Controller_Strobe => Controller_Strobe,
     Controller1_Clock => Controller1_Clock,
@@ -163,7 +194,7 @@ begin
     PinWithoutSemicolon => open
     );
 
-  HDMIOut : HDMIController
+  hdmi : HDMIController
     port map (
       CLK       => TFT_Clock,
       RSTN      => RSTN,
@@ -182,6 +213,23 @@ begin
       FB_Data    => HDMI_FB_Color
 
       );
+		
+	AC97_PCM <= APU_PCM & X"00";
+		
+	ac97 : AC97_Output
+	  port map (
+	    CLK => CLK,
+		 RSTN => RSTN,
+		 BITCLK => AUDCLK,
+		 AUDSDI => AUDSDI,
+		 AUDSDO => AUDSDO,
+		 AUDSYNC => AUDSYNC,
+		 AUDRST => AUDRST,
+		 
+		 PCM_in_left => AC97_PCM,
+		 PCM_in_right => AC97_PCM
+		 );
+
 
 end Behavioral;
 

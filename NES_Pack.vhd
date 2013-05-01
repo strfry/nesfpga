@@ -29,7 +29,7 @@ package NES_Pack is
             
             --Audio Outputs
             A_Rectangle : out std_logic;    --Rectangle Wave Output (Mixed)
-            A_Combined  : out std_logic;    --Triangle, Noise, And PCM (DPCM) Output
+            A_Combined  : out std_logic_vector(7 downto 0);    --Triangle, Noise, And PCM (DPCM) Output
             
             --The following three signals represent the status of an internal register
             --  used in accessing the expansion port
@@ -111,5 +111,4 @@ package NES_Pack is
 	 
 	);
 	end component;
-
 end;

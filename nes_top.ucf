@@ -29,6 +29,16 @@
  NET "HDMISDA"    LOC = "V8" |IOSTANDARD = LVCMOS33 |PULLUP;     # Bank = 18, Pin name = IO_L17P_18,      Sch name = I2C-SDA 
  #NET "HDMIHPINT"  LOC = "W9" | IOSTANDARD = LVCMOS33;     # Bank = 18, Pin name = IO_L15N_18,      Sch name = HDMI-HPINT    
  NET "HDMIRSTN"   LOC = "AF23" |IOSTANDARD = LVCMOS33 |PULLUP;   # Bank = 2,  Pin name = IO_L1P_CC_A25_2, Sch name = HDMI-RST 
+ 
+ NET "AUDCLK"  LOC = "AH17";   # Bank = 4,   Pin name = IO_L7P_GC_VRN_4,   Sch name = AUD-BIT-CLK
+ NET "AUDSDI"  LOC = "AE18";   # Bank = 4,   Pin name = IO_L8N_CC_GC_4,    Sch name = AUD-SDI
+ NET "AUDSDO"  LOC = "AG20";   # Bank = 4,   Pin name = IO_L4N_GC_VREF_4,  Sch name = AUD-SDO
+ NET "AUDSYNC" LOC = "J9";     # Bank = 20,  Pin name = IO_L9N_CC_20,	   Sch name = AUD-SYNC
+ NET "AUDRST"  LOC = "E12";    # Bank = 20,  Pin name = IO_L17P_20,        Sch name = AUD-RESET
+
+
+ 
+ 
  #NET "Led<0>"  LOC = "AG8";  # Bank = 22, Pin name = IO_L18P_22,     Sch name = LD0
  #NET "Led<1>"  LOC = "AH8";  # Bank = 22, Pin name = IO_L18N_22,     Sch name = LD1
  #NET "Led<2>"  LOC = "AH9";  # Bank = 22, Pin name = IO_L17P_22,     Sch name = LD2

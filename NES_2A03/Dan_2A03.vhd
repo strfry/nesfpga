@@ -26,7 +26,7 @@ entity NES_2A03 is
 		
 		--Audio Outputs
 		A_Rectangle : out std_logic;	--Rectangle Wave Output (Mixed)
-		A_Combined 	: out std_logic;	--Triangle, Noise, And PCM (DPCM) Output
+		A_Combined 	: out std_logic_vector(7 downto 0);	--Triangle, Noise, And PCM (DPCM) Output
 		
 		--The following three signals represent the status of an internal register
 		--	used in accessing the expansion port
@@ -109,7 +109,7 @@ begin
 	
 --to be implemented later
 	A_Rectangle <= '0';
-	A_Combined 	<= '0';
+	--A_Combined 	<= '0';
 	W_4016_1		<= 'Z';
 	W_4016_2		<= 'Z';
 
@@ -288,4 +288,18 @@ end process DMATransfer;
 			Address			=> Address (10 downto 0),
 			Data				=> Data
 		);
+		
+	APU : APU_Main
+	port map (
+		CLK => Global_Clk,
+		PHI1_CE => PHI1_CE,
+		PHI2_CE => '1',
+		RW10 => RW_10,
+		Address => Address,
+		--Data_read => APU_Data,
+		Data_read => open,
+		Data_write => Data,
+		Interrupt => open,
+		PCM_out => A_Combined
+	);
 end;

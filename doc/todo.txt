@@ -20,3 +20,11 @@ Interesting Demonstration tool: put some graphic/audio feature enables to switch
 	
 Infrastructure for mapper support
 	Idea: Use mappers for design partitioning and partial reconfiguration
+
+
+Documentation
+	Write build instructions
+		Simplify things like py65 PYTHONPATH
+	Write some comments
+	
+	Overview of each module / c&p into thesis
