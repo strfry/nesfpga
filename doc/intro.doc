@@ -1,0 +1,47 @@
+Introductional Reading on the NES
+
+This thesis aims to be a 
+
+There are different sources of information stemming from the NES Emulating scene. Most information in this thesis come from reading floating .txt files, wiki pages,
+forum entries and IRC gossip, which all are usually not considered for citation in an academic context.
+This thesis tries to put some of these information in my own words, which aims to simplify things from a electronic engineering perspective, and build a fun project
+that can be used to teach Hardware Design. Another goal is to provide a general overview about the NES System, as it has been written by many before.
+
+The appendix contains a few should also considered be part 
+
+the nes community
+
+what it means to gather information from old .txt files, irc channels and forum/wiki consensus.
+
+Differences in terminology to electrical engineering. 
+
+
+
+ „When was the last time you spent a pleasant evening in a comfortable chair, reading a good program?" - Donald Knuth
+
+Few languages are further away from this literate programming 
+
+meta-programming / vhdl frontend
+80s style language, new language design have it hard because of proprietary vendor tools.
+the quality of the tools that are provided by the big fpga vendors are abysmal quality. 
+open source approach, opening inhibited by patents and intellectual property bullshit thinking
+fpga have failed the diy dream of software-solderable hardware. instead, xilinx delievers a world of pain.
+allthough the myhdl approach is not comparable in performance to commercial tools, it can radically simplify testing
+when working in a modern, elegant script language like python.
+
+MyHDL provides a way to describe a hardware simulation in python.
+because the current state of afairs with FPGAs leave no other choice than working in establishment languages like
+VHDL or Verilog, because the proprietary synthesizer tools provide nothing else.
+
+
+it might even be possible to write a netlist backend.
+
+
+may represent a different
+approach to fpga development, that benefits from having a higher level programming language that interacts with
+a 
+be of use for simple
+projects.
+ for
+xilinx is evil.
+a case for myhdl
