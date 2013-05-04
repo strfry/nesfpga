@@ -1,0 +1,60 @@
+http://www.eecg.toronto.edu/~pc/courses/432/2008/projects/nes-audio.pdf
+
+- Overview
+
+The 2A03 CPU chip of the NES features a rather simple unit for audio playback. It is referred to as Audio Processing Unit (APU), or sometimes pseudo APU (pAPU)
+because it is not really a discrete unit but is integrated on the RP2A03/RP2A07 CPU IC.
+
+It features 2 square wave channels, one triangle, a LFSR-based noise generator and a delta modulation channel for sample playback. Each channel is equipped
+with a length counter .
+The DMC is seldomly used because of the high memory demand of audio samples, leading to higher cartridge manifacturing cost if long samples are used.
+
+- Technical Details
+
+The APU is mapped into the CPU Address Bus at the addresses 0x4000 to 0x4017.
+
+The APU is clocked with the CPU Clock, and generates different frequencies with a programmable divider.
+
+The DMC has the ability to refill it's 1-byte sample buffer independently from the CPU. This is achieved by halting the CPU through the internal RDY-signal
+for 4 Cycles and driving the address bus itself. This can lead to unexpected behaviour when the CPU was halted while accessing registers with side-effects 
+(Like PPU_Status or Controller Logic) and NES games had to work around this bug until it was fixed in the PAL version.
+
+
+- Programming the APU
+
+For generat
+
+
+- Revisions
+- State of RevEng Research
+
+Visual 2A03 Project: http://www.qmtpro.com/~nes/chipimages/visual2a03/
+
+- Features / Audio Channels
+- CPU Interface
+- 
+
+- Analog Components
+
+The APU has two disting output pins, with both rectangle channels on pin 1, and combined triangle, noise and DMC on pin 2. Those are mixed and filtered 
+on the motherboard with analog circuitry, which contributes to the unique sound of the NES. The mixer has a non-linear behaviour, which can be utilized
+to influence the triangle channel volume, which lacks this functionality on the APU itself.
+
+http://www.freeinfosociety.com/electronics/schemview.php?id=2405
+
+- Aliasing challenge
+
+With a purely digital implementation of the APU, the 
+blarrg's bandwith-limited synthesis for emulators
+how does the nes do it?
+FIR filter implementation for FPGAs -> can also help with band-pass attenuation characteristics
+
+- Implementation status
+
+Currently only the features necessary for Super Mario Brothers are implemented. This leaves out the sweeping units of the rectangle channels, 
+
+- 4015/4016 Controller input registers
+Within the APU address space lie the registers related to controller input. These are nothing more than a few bit registers with dedicated IC pins, and could
+have been easily implemented with external discrete logic. It can be assumed that they share address decoder resources with the APU and were integrated
+for cost optimization and utilizing left-over CPU pins. As these reasons are now obsolete, the APU and the Controller Input logic are not described in the
+same module in this implementation.
