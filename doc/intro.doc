@@ -29,7 +29,12 @@ fpga have failed the diy dream of software-solderable hardware. instead, xilinx 
 allthough the myhdl approach is not comparable in performance to commercial tools, it can radically simplify testing
 when working in a modern, elegant script language like python.
 
-MyHDL provides a way to describe a hardware simulation in python.
+MyHDL provides a way to describe a hardware simulation in python. this is a huge step from an 80s language like VHDL,
+since programming experience can naturally be used to debug hardware, and simplify .
+
+this work takes a hybrid approach, as i discovered myhdl after most of the work was complete, and used it only for newer modules,
+like the apu and the onscreen debugger. were written in myhdl, while t
+
 because the current state of afairs with FPGAs leave no other choice than working in establishment languages like
 VHDL or Verilog, because the proprietary synthesizer tools provide nothing else.
 
