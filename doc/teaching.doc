@@ -1,0 +1,11 @@
+possible goals to achieve in a lab:
+
+write a controller automation in myhdl for debugging
+
+implement an apu feature like sweep
+
+modify an existing mapper infrastructure to run a new game
+
+implement a video scaler
+
+implement a missing apu feature like sweep
