@@ -8,45 +8,71 @@
  NET "rstn"   LOC = "E7" |IOSTANDARD = LVCMOS25 |PULLUP;
 
 # onboard HDMI
- NET "HDMIHSYNC"  LOC = "H8"	|IOSTANDARD = LVCMOS33;			# Bank = 20, Pin name = IO_L3N_20,       Sch name = HDMI-H    
- NET "HDMIVSYNC"  LOC = "F13" |IOSTANDARD = LVCMOS33;		# Bank = 20, Pin name = IO_L19P_20,      Sch name = HDMI-V      
- NET "HDMIDE"     LOC = "V10" |IOSTANDARD = LVCMOS33;    # Bank = 18, Pin name = IO_L19P_18,      Sch name = HDMI-DE      
- NET "HDMICLKP"   LOC = "K11" |IOSTANDARD = LVCMOS33 |DRIVE = 24 |SLEW = FAST;    # Bank = 20, Pin name = IO_L5P_20,       Sch name = HDMI-CLK_P      
- NET "HDMICLKN"   LOC = "J11" |IOSTANDARD = LVCMOS33 |DRIVE = 24 |SLEW = FAST;    # Bank = 20, Pin name = IO_L5N_20,       Sch name = HDMI-CLK_N      
- NET "HDMID<0>"   LOC = "G10" |IOSTANDARD = LVCMOS33;    # Bank = 20, Pin name = IO_L2N_20,       Sch name = HDMI-D0      
- NET "HDMID<1>"   LOC = "G8" |IOSTANDARD = LVCMOS33;     # Bank = 20, Pin name = IO_L3P_20,       Sch name = HDMI-D1      
- NET "HDMID<2>"   LOC = "B12" |IOSTANDARD = LVCMOS33;    # Bank = 20, Pin name = IO_L8N_CC_20,    Sch name = HDMI-D2      
- NET "HDMID<3>"   LOC = "D12" |IOSTANDARD = LVCMOS33;    # Bank = 20, Pin name = IO_L6P_20,       Sch name = HDMI-D3      
- NET "HDMID<4>"   LOC = "C12" |IOSTANDARD = LVCMOS33;    # Bank = 20, Pin name = IO_L6N_20,       Sch name = HDMI-D4     
- NET "HDMID<5>"   LOC = "D11" |IOSTANDARD = LVCMOS33;    # Bank = 20, Pin name = IO_L4P_20,       Sch name = HDMI-D5      
- NET "HDMID<6>"   LOC = "F10" |IOSTANDARD = LVCMOS33;    # Bank = 20, Pin name = IO_L2P_20,       Sch name = HDMI-D6      
- NET "HDMID<7>"   LOC = "D10" |IOSTANDARD = LVCMOS33;    # Bank = 20, Pin name = IO_L4N_VREF_20,  Sch name = HDMI-D7      
- NET "HDMID<8>"   LOC = "E9" |IOSTANDARD = LVCMOS33;     # Bank = 20, Pin name = IO_L0P_20,       Sch name = HDMI-D8      
- NET "HDMID<9>"   LOC = "F9" |IOSTANDARD = LVCMOS33;     # Bank = 20, Pin name = IO_L1P_20,       Sch name = HDMI-D9      
- NET "HDMID<10>"  LOC = "E8" |IOSTANDARD = LVCMOS33;     # Bank = 20, Pin name = IO_L0N_20,       Sch name = HDMI-D10      
- NET "HDMID<11>"  LOC = "F8" |IOSTANDARD = LVCMOS33;     # Bank = 20, Pin name = IO_L1N_20,       Sch name = HDMI-D11      
- NET "HDMISCL"    LOC = "U8" |IOSTANDARD = LVCMOS33 |PULLUP;     # Bank = 18, Pin name = IO_L17N_18,      Sch name = I2C-SCL      
- NET "HDMISDA"    LOC = "V8" |IOSTANDARD = LVCMOS33 |PULLUP;     # Bank = 18, Pin name = IO_L17P_18,      Sch name = I2C-SDA 
- #NET "HDMIHPINT"  LOC = "W9" | IOSTANDARD = LVCMOS33;     # Bank = 18, Pin name = IO_L15N_18,      Sch name = HDMI-HPINT    
- NET "HDMIRSTN"   LOC = "AF23" |IOSTANDARD = LVCMOS33 |PULLUP;   # Bank = 2,  Pin name = IO_L1P_CC_A25_2, Sch name = HDMI-RST 
+# NET "HDMIHSYNC"  LOC = "H8"	|IOSTANDARD = LVCMOS33;			# Bank = 20, Pin name = IO_L3N_20,       Sch name = HDMI-H    
+# NET "HDMIVSYNC"  LOC = "F13" |IOSTANDARD = LVCMOS33;		# Bank = 20, Pin name = IO_L19P_20,      Sch name = HDMI-V      
+# NET "HDMIDE"     LOC = "V10" |IOSTANDARD = LVCMOS33;    # Bank = 18, Pin name = IO_L19P_18,      Sch name = HDMI-DE      
+# NET "HDMICLKP"   LOC = "K11" |IOSTANDARD = LVCMOS33 |DRIVE = 24 |SLEW = FAST;    # Bank = 20, Pin name = IO_L5P_20,       Sch name = HDMI-CLK_P      
+# NET "HDMICLKN"   LOC = "J11" |IOSTANDARD = LVCMOS33 |DRIVE = 24 |SLEW = FAST;    # Bank = 20, Pin name = IO_L5N_20,       Sch name = HDMI-CLK_N      
+# NET "HDMID<0>"   LOC = "G10" |IOSTANDARD = LVCMOS33;    # Bank = 20, Pin name = IO_L2N_20,       Sch name = HDMI-D0      
+# NET "HDMID<1>"   LOC = "G8" |IOSTANDARD = LVCMOS33;     # Bank = 20, Pin name = IO_L3P_20,       Sch name = HDMI-D1      
+# NET "HDMID<2>"   LOC = "B12" |IOSTANDARD = LVCMOS33;    # Bank = 20, Pin name = IO_L8N_CC_20,    Sch name = HDMI-D2      
+# NET "HDMID<3>"   LOC = "D12" |IOSTANDARD = LVCMOS33;    # Bank = 20, Pin name = IO_L6P_20,       Sch name = HDMI-D3      
+# NET "HDMID<4>"   LOC = "C12" |IOSTANDARD = LVCMOS33;    # Bank = 20, Pin name = IO_L6N_20,       Sch name = HDMI-D4     
+# NET "HDMID<5>"   LOC = "D11" |IOSTANDARD = LVCMOS33;    # Bank = 20, Pin name = IO_L4P_20,       Sch name = HDMI-D5      
+# NET "HDMID<6>"   LOC = "F10" |IOSTANDARD = LVCMOS33;    # Bank = 20, Pin name = IO_L2P_20,       Sch name = HDMI-D6      
+# NET "HDMID<7>"   LOC = "D10" |IOSTANDARD = LVCMOS33;    # Bank = 20, Pin name = IO_L4N_VREF_20,  Sch name = HDMI-D7      
+# NET "HDMID<8>"   LOC = "E9" |IOSTANDARD = LVCMOS33;     # Bank = 20, Pin name = IO_L0P_20,       Sch name = HDMI-D8      
+# NET "HDMID<9>"   LOC = "F9" |IOSTANDARD = LVCMOS33;     # Bank = 20, Pin name = IO_L1P_20,       Sch name = HDMI-D9      
+# NET "HDMID<10>"  LOC = "E8" |IOSTANDARD = LVCMOS33;     # Bank = 20, Pin name = IO_L0N_20,       Sch name = HDMI-D10      
+# NET "HDMID<11>"  LOC = "F8" |IOSTANDARD = LVCMOS33;     # Bank = 20, Pin name = IO_L1N_20,       Sch name = HDMI-D11      
+# NET "HDMISCL"    LOC = "U8" |IOSTANDARD = LVCMOS33 |PULLUP;     # Bank = 18, Pin name = IO_L17N_18,      Sch name = I2C-SCL      
+# NET "HDMISDA"    LOC = "V8" |IOSTANDARD = LVCMOS33 |PULLUP;     # Bank = 18, Pin name = IO_L17P_18,      Sch name = I2C-SDA 
+# #NET "HDMIHPINT"  LOC = "W9" | IOSTANDARD = LVCMOS33;     # Bank = 18, Pin name = IO_L15N_18,      Sch name = HDMI-HPINT    
+# NET "HDMIRSTN"   LOC = "AF23" |IOSTANDARD = LVCMOS33 |PULLUP;   # Bank = 2,  Pin name = IO_L1P_CC_A25_2, Sch name = HDMI-RST 
+# 
+# NET "AUDCLK"  LOC = "AH17" |IOSTANDARD = LVCMOS33;   # Bank = 4,   Pin name = IO_L7P_GC_VRN_4,   Sch name = AUD-BIT-CLK
+# NET "AUDSDI"  LOC = "AE18" |IOSTANDARD = LVCMOS33;   # Bank = 4,   Pin name = IO_L8N_CC_GC_4,    Sch name = AUD-SDI
+# NET "AUDSDO"  LOC = "AG20" |IOSTANDARD = LVCMOS33;   # Bank = 4,   Pin name = IO_L4N_GC_VREF_4,  Sch name = AUD-SDO
+# NET "AUDSYNC" LOC = "J9" |IOSTANDARD = LVCMOS33;     # Bank = 20,  Pin name = IO_L9N_CC_20,	   Sch name = AUD-SYNC
+# NET "AUDRST"  LOC = "E12" |IOSTANDARD = LVCMOS33;    # Bank = 20,  Pin name = IO_L17P_20,        Sch name = AUD-RESET
+
+
+  NET "HDMIHSYNC"  LOC = "H8";     # Bank = 20, Pin name = IO_L3N_20,       Sch name = HDMI-H    
+ NET "HDMIVSYNC"  LOC = "F13";    # Bank = 20, Pin name = IO_L19P_20,      Sch name = HDMI-V      
+ NET "HDMIDE"     LOC = "V10";    # Bank = 18, Pin name = IO_L19P_18,      Sch name = HDMI-DE      
+ NET "HDMICLKP"   LOC = "K11";    # Bank = 20, Pin name = IO_L5P_20,       Sch name = HDMI-CLK_P      
+ NET "HDMICLKN"   LOC = "J11";    # Bank = 20, Pin name = IO_L5N_20,       Sch name = HDMI-CLK_N      
+ NET "HDMID<0>"   LOC = "G10";    # Bank = 20, Pin name = IO_L2N_20,       Sch name = HDMI-D0      
+ NET "HDMID<1>"   LOC = "G8";     # Bank = 20, Pin name = IO_L3P_20,       Sch name = HDMI-D1      
+ NET "HDMID<2>"   LOC = "B12";    # Bank = 20, Pin name = IO_L8N_CC_20,    Sch name = HDMI-D2      
+ NET "HDMID<3>"   LOC = "D12";    # Bank = 20, Pin name = IO_L6P_20,       Sch name = HDMI-D3      
+ NET "HDMID<4>"   LOC = "C12";    # Bank = 20, Pin name = IO_L6N_20,       Sch name = HDMI-D4     
+ NET "HDMID<5>"   LOC = "D11";    # Bank = 20, Pin name = IO_L4P_20,       Sch name = HDMI-D5      
+ NET "HDMID<6>"   LOC = "F10";    # Bank = 20, Pin name = IO_L2P_20,       Sch name = HDMI-D6      
+ NET "HDMID<7>"   LOC = "D10";    # Bank = 20, Pin name = IO_L4N_VREF_20,  Sch name = HDMI-D7      
+ NET "HDMID<8>"   LOC = "E9";     # Bank = 20, Pin name = IO_L0P_20,       Sch name = HDMI-D8      
+ NET "HDMID<9>"   LOC = "F9";     # Bank = 20, Pin name = IO_L1P_20,       Sch name = HDMI-D9      
+ NET "HDMID<10>"  LOC = "E8";     # Bank = 20, Pin name = IO_L0N_20,       Sch name = HDMI-D10      
+ NET "HDMID<11>"  LOC = "F8";     # Bank = 20, Pin name = IO_L1N_20,       Sch name = HDMI-D11      
+ NET "HDMISCL"    LOC = "U8";     # Bank = 18, Pin name = IO_L17N_18,      Sch name = I2C-SCL      
+ NET "HDMISDA"    LOC = "V8";     # Bank = 18, Pin name = IO_L17P_18,      Sch name = I2C-SDA 
+ #NET "HDMIHPINT"  LOC = "W9";     # Bank = 18, Pin name = IO_L15N_18,      Sch name = HDMI-HPINT    
+ NET "HDMIRSTN"   LOC = "AF23";   # Bank = 2,  Pin name = IO_L1P_CC_A25_2, Sch name = HDMI-RST 
  
- NET "AUDCLK"  LOC = "AH17";   # Bank = 4,   Pin name = IO_L7P_GC_VRN_4,   Sch name = AUD-BIT-CLK
+ NET "AUDCLK"  LOC = "AH17";   # Bank = 4,   Pin name = IO_L7P_GC_VRN_4,   Sch name = AUD-BIT-CLK 
  NET "AUDSDI"  LOC = "AE18";   # Bank = 4,   Pin name = IO_L8N_CC_GC_4,    Sch name = AUD-SDI
  NET "AUDSDO"  LOC = "AG20";   # Bank = 4,   Pin name = IO_L4N_GC_VREF_4,  Sch name = AUD-SDO
- NET "AUDSYNC" LOC = "J9";     # Bank = 20,  Pin name = IO_L9N_CC_20,	   Sch name = AUD-SYNC
+ NET "AUDSYNC" LOC = "J9";     # Bank = 20,  Pin name = IO_L9N_CC_20,      Sch name = AUD-SYNC
  NET "AUDRST"  LOC = "E12";    # Bank = 20,  Pin name = IO_L17P_20,        Sch name = AUD-RESET
-
-
  
- 
- #NET "Led<0>"  LOC = "AG8";  # Bank = 22, Pin name = IO_L18P_22,     Sch name = LD0
- #NET "Led<1>"  LOC = "AH8";  # Bank = 22, Pin name = IO_L18N_22,     Sch name = LD1
- #NET "Led<2>"  LOC = "AH9";  # Bank = 22, Pin name = IO_L17P_22,     Sch name = LD2
- #NET "Led<3>"  LOC = "AG10"; # Bank = 22, Pin name = IO_L19P_22,     Sch name = LD3
- #NET "Led<4>"  LOC = "AH10"; # Bank = 22, Pin name = IO_L17N_22,     Sch name = LD4
- #NET "Led<5>"  LOC = "AG11"; # Bank = 22, Pin name = IO_L19N_22,     Sch name = LD5
- #NET "Led<6>"  LOC = "AF11"; # Bank = 22, Pin name = IO_L16P_22,     Sch name = LD6
- #NET "Led<7>"  LOC = "AE11"; # Bank = 22, Pin name = IO_L16N_22,     Sch name = LD7
+ NET "Led<0>"  LOC = "AG8";  # Bank = 22, Pin name = IO_L18P_22,     Sch name = LD0
+ NET "Led<1>"  LOC = "AH8";  # Bank = 22, Pin name = IO_L18N_22,     Sch name = LD1
+ NET "Led<2>"  LOC = "AH9";  # Bank = 22, Pin name = IO_L17P_22,     Sch name = LD2
+ NET "Led<3>"  LOC = "AG10"; # Bank = 22, Pin name = IO_L19P_22,     Sch name = LD3
+ NET "Led<4>"  LOC = "AH10"; # Bank = 22, Pin name = IO_L17N_22,     Sch name = LD4
+ NET "Led<5>"  LOC = "AG11"; # Bank = 22, Pin name = IO_L19N_22,     Sch name = LD5
+ NET "Led<6>"  LOC = "AF11"; # Bank = 22, Pin name = IO_L16P_22,     Sch name = LD6
+ NET "Led<7>"  LOC = "AE11"; # Bank = 22, Pin name = IO_L16N_22,     Sch name = LD7
  
  NET "BTN<0>" LOC = "G6";  # Bank = 12, Pin name = IO_L17P_12,        Sch name = BTN0
  NET "BTN<1>" LOC = "G7";  # Bank = 12, Pin name = IO_L17N_12,        Sch name = BTN1
@@ -65,6 +91,24 @@
  NET "sw<5>" LOC = "K17"; # Bank = 3, Pin name = IO_L1P_CC_GC_3,   Sch name = SW5
  NET "sw<6>" LOC = "G16"; # Bank = 3, Pin name = IO_L2N_GC_VRP_3,  Sch name = SW6
  NET "sw<7>" LOC = "G15"; # Bank = 3, Pin name = IO_L2P_GC_VRN_3,  Sch name = SW7
+
+ NET "JA<0>"  LOC = "AD11";   # BANK = 22,  Pin name = IO_L10N_CC_22,   Sch name = JA1
+ NET "JA<1>"  LOC = "AD9";    # BANK = 22,  Pin name = IO_L9N_CC_22,    Sch name = JA2
+ NET "JA<2>"  LOC = "AM13";   # BANK = 22,  Pin name = IO_L2N_22,       Sch name = JA3
+ NET "JA<3>"  LOC = "AM12";   # BANK = 22,  Pin name = IO_L6P_22,       Sch name = JA4
+ NET "JA<4>"  LOC = "AD10";   # BANK = 22,  Pin name = IO_L10P_CC_22,   Sch name = JA7
+ NET "JA<5>"  LOC = "AE8";    # BANK = 22,  Pin name = IO_L9P_CC_22,    Sch name = JA8
+ NET "JA<6>"  LOC = "AF10";   # BANK = 22,  Pin name = IO_L14N_VREF_22, Sch name = JA9
+ NET "JA<7>"  LOC = "AJ11";   # BANK = 22,  Pin name = IO_L11N_CC_22,   Sch name = JA10
+ 
+ NET "JB<0>"  LOC = "AE9";    # BANK = 22,  Pin name = IO_L12N_VRP_22,  Sch name = JB1
+ NET "JB<1>"  LOC = "AC8";    # BANK = 22,  Pin name = IO_L5P_22,       Sch name = JB2
+ NET "JB<2>"  LOC = "AB10";   # BANK = 22,  Pin name = IO_L1P_22,       Sch name = JB3
+ NET "JB<3>"  LOC = "AC9";    # BANK = 22,  Pin name = IO_L7N_22,       Sch name = JB4
+ NET "JB<4>"  LOC = "AF8";    # BANK = 22,  Pin name = IO_L12P_VRN_22,  Sch name = JB7
+ NET "JB<5>"  LOC = "AB8";    # BANK = 22,  Pin name = IO_L5N_22,       Sch name = JB8
+ NET "JB<6>"  LOC = "AA10";   # BANK = 22,  Pin name = IO_L1N_22,       Sch name = JB9
+ NET "JB<7>"  LOC = "AA9";    # BANK = 22,  Pin name = IO_L3N_22,       Sch name = JB10
  
 #Created by Constraints Editor (xc5vlx50t-ff1136-2) - 2011/11/11
 NET "CLK" TNM_NET = CLK;
