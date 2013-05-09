@@ -1,3 +1,7 @@
+Introduction
+
+Goal: Super Mario, FPGA, HDMI
+
 - NES Components
 	Mainboard
 		System block diagram
@@ -17,7 +21,13 @@
 		Explain different Channels
 	Memory Mappers
 	
-- Methodology
+- Implementation
+        Tools (VHDL / myHDL)
+	Dan Leach's CPU
+	PPU
+	Controller
+	APU
+
 	Information Gathering
 		Notes and examples on the required emulator accuracy
 		Inferring implementation from NES quirks
@@ -28,15 +38,31 @@
 		APU TestBench
 	Useful test ROMs
 		NEStress
+
+Implementation Issues
+
+
+Test Environment
+
 	
-Differences regarding FPGA implementation
-	HDMI Output module
-	Block RAM Cartridge
+Extentions:
+ Existing: HDMI / AC97
+ 
+
+% Differences regarding FPGA implementation
+%	HDMI Output module
+%	Block RAM Cartridge
 
 Future Work
-	Scaling
-	More mappers / External ROM Memory
+Functional Extentions
+ Planned: USB-ROM / HID / Scaling
+
+Improving ROM Compatibility
+	More mappers / %External ROM Memory
 	WRAM Implementation
-	Modern Interfaces (USB HID Input)
+	%Modern Interfaces (USB HID Input)
 	Different region implementations (NTSC/PAL, Famicom, Dendy)
+
+Conclusion:
+
 
