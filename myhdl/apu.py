@@ -6,6 +6,7 @@ NES_CLK_period = 46 * 12
 
 def APU_Main(
 		CLK,
+		RSTN, 
 		PHI1_CE,
 		PHI2_CE,
 		RW10,
@@ -35,10 +36,10 @@ def APU_Main(
 	PCM_triangle = Signal(intbv()[4:0])
 
 	frameCounter = APU_FrameCounter(CLK, APU_CE, RW10, Address, Data_write, HalfFrame_CE, QuarterFrame_CE, Interrupt)
-	pulse1 = APU_Pulse(CLK, APU_CE, RW10, Address, Data_write, Pulse1_CS, HalfFrame_CE, QuarterFrame_CE, PCM_pulse1)
-	pulse2 = APU_Pulse(CLK, APU_CE, RW10, Address, Data_write, Pulse2_CS, HalfFrame_CE, QuarterFrame_CE, PCM_pulse2)
-	noise = APU_Noise(CLK, APU_CE, RW10, Address, Data_write, Noise_CS, HalfFrame_CE, QuarterFrame_CE, PCM_noise)
-	triangle = APU_Triangle(CLK, APU_CE, RW10, Address, Data_write, Triangle_CS, HalfFrame_CE, QuarterFrame_CE, PCM_triangle)
+	pulse1 = APU_Pulse(CLK, RSTN, APU_CE, RW10, Address, Data_write, Pulse1_CS, HalfFrame_CE, QuarterFrame_CE, PCM_pulse1)
+	pulse2 = APU_Pulse(CLK, RSTN, APU_CE, RW10, Address, Data_write, Pulse2_CS, HalfFrame_CE, QuarterFrame_CE, PCM_pulse2)
+	noise = APU_Noise(CLK, RSTN, APU_CE, RW10, Address, Data_write, Noise_CS, HalfFrame_CE, QuarterFrame_CE, PCM_noise)
+	triangle = APU_Triangle(CLK, RSTN, APU_CE, RW10, Address, Data_write, Triangle_CS, HalfFrame_CE, QuarterFrame_CE, PCM_triangle)
 
 	@always(CLK.posedge)
 	def ce():
@@ -143,7 +144,7 @@ def APU_Envelope(
 	return instances()
 
 def APU_Pulse(
-	CLK, APU_CE, RW10, Address, Data_write,
+	CLK, RSTN, APU_CE, RW10, Address, Data_write,
 	ChipSelect, HalfFrame_CE, QuarterFrame_CE,
 	PCM_out):
 
@@ -171,35 +172,40 @@ def APU_Pulse(
 
 	@always(CLK.posedge)
 	def logic():
-		if QuarterFrame_CE:
-			EnvelopeStartFlag.next = False
-		
-		LengthCounterLoadFlag.next = False
-
-		if APU_CE and RW10 == 0 and ChipSelect:
-			if Address[2:0] == 0x0:
-				DutyCycle.next = Data_write[8:6]
-				EnvelopeConstantFlag.next = Data_write[4]
-				EnvelopeDecay.next = Data_write[4:0]
-			elif Address[2:0] == 0x1:
-				# Sweep unit unimplemented
-				pass
-			elif Address[2:0] == 0x2:
-				TimerLoad.next[8:0] = Data_write
-			elif Address[2:0] == 0x3:
-				EnvelopeStartFlag.next = True
-				TimerLoad.next[11:8] = Data_write[3:0]
-				LengthCounterLoad.next = Data_write[8:3]
+		if not RSTN:
+			sequencer.next = "00001111"
+		else:
+			if QuarterFrame_CE:
+				EnvelopeStartFlag.next = False
+			
+			LengthCounterLoadFlag.next = False
+	
+			if APU_CE:
+				if timer == 0:
+					sequencer.next = concat(sequencer[0], sequencer[8:1])
+					PCM_out.next = EnvelopeVolume if sequencer[0] else 0x00
+					if not LengthCounterGate:
+						PCM_out.next = 0
+					timer.next = TimerLoad
+				else:
+					timer.next = timer - 1
+			
+			if APU_CE and RW10 == 0 and ChipSelect:
+				if Address[2:0] == 0x0:
+					DutyCycle.next = Data_write[8:6]
+					
+					EnvelopeConstantFlag.next = Data_write[4]
+					EnvelopeDecay.next = Data_write[4:0]
+				elif Address[2:0] == 0x1:
+					# Sweep unit unimplemented
+					pass
+				elif Address[2:0] == 0x2:
+					TimerLoad.next[8:0] = Data_write
+				elif Address[2:0] == 0x3:
+					EnvelopeStartFlag.next = True
+					TimerLoad.next[11:8] = Data_write[3:0]
+					LengthCounterLoad.next = Data_write[8:3]
 				LengthCounterLoadFlag.next = True
-		if APU_CE:
-			if timer == 0:
-				sequencer.next = concat(sequencer[0], sequencer[8:1])
-				PCM_out.next = EnvelopeVolume if sequencer[0] else 0x00
-				if not LengthCounterGate:
-					PCM_out.next = 0
-				timer.next = TimerLoad
-			else:
-				timer.next = timer - 1
 	return instances()
 
 def LengthCounter(
@@ -234,7 +240,7 @@ def LengthCounter(
 	return instances()
 
 def APU_Noise(
-	CLK, APU_CE, RW10, Address, Data_write,
+	CLK, RSTN, APU_CE, RW10, Address, Data_write,
 	ChipSelect, HalfFrame_CE, QuarterFrame_CE,
 	PCM_out):
 
@@ -262,42 +268,45 @@ def APU_Noise(
 	
 	@always(CLK.posedge)
 	def logic():
-		if QuarterFrame_CE:
-			EnvelopeStartFlag.next = False
-
-		LengthCounterLoadFlag.next = False
-
-		if APU_CE and RW10 == 0 and ChipSelect:
-			if Address[2:0] == 0x0:
-				LengthCounterHalt.next = Data_write[5]
-				EnvelopeConstantFlag.next = Data_write[4]
-				EnvelopeDecay.next = Data_write[4:0]
-			elif Address[2:0] == 0x2:
-				LFSRMode.next = Data_write[7]
-				TimerLoad.next[4:0] = Data_write[4:0]
-			elif Address[2:0] == 0x3:
-				EnvelopeStartFlag.next = True
-				LengthCounterLoad.next = Data_write[8:3]
-				LengthCounterLoadFlag.next = True
-		if APU_CE:
-			if timer == 0:
-				fb_bit = bool(lfsr[1])
-				if LFSRMode:
-					fb_bit = lfsr[6]
-				lfsr.next = concat(fb_bit ^ lfsr[0], lfsr[15:1])
-				# This is the simple version, the MyHDL convertor does not like it
-				#fb_bit = lfsr[0] ^ (lfsr[6] if LFSRMode else lfsr[1])
-				#lfsr.next = concat(fb_bit, lfsr[15:1])
-				PCM_out.next = EnvelopeVolume if lfsr[0] and LengthCounterGate else 0x00
-				timer.next = timer_lut[TimerLoad]
-			else:
-				timer.next = timer - 1
+		if not RSTN:
+			lfsr.next = intbv("111111111111111")
+		else:
+			if QuarterFrame_CE:
+				EnvelopeStartFlag.next = False
+	
+			LengthCounterLoadFlag.next = False
+	
+			if APU_CE and RW10 == 0 and ChipSelect:
+				if Address[2:0] == 0x0:
+					LengthCounterHalt.next = Data_write[5]
+					EnvelopeConstantFlag.next = Data_write[4]
+					EnvelopeDecay.next = Data_write[4:0]
+				elif Address[2:0] == 0x2:
+					LFSRMode.next = Data_write[7]
+					TimerLoad.next[4:0] = Data_write[4:0]
+				elif Address[2:0] == 0x3:
+					EnvelopeStartFlag.next = True
+					LengthCounterLoad.next = Data_write[8:3]
+					LengthCounterLoadFlag.next = True
+			if APU_CE:
+				if timer == 0:
+					fb_bit = bool(lfsr[1])
+					if LFSRMode:
+						fb_bit = lfsr[6]
+					lfsr.next = concat(fb_bit ^ lfsr[0], lfsr[15:1])
+					# This is the simple version, the MyHDL convertor does not like it
+					#fb_bit = lfsr[0] ^ (lfsr[6] if LFSRMode else lfsr[1])
+					#lfsr.next = concat(fb_bit, lfsr[15:1])
+					PCM_out.next = EnvelopeVolume if lfsr[0] and LengthCounterGate else 0x00
+					timer.next = timer_lut[TimerLoad]
+				else:
+					timer.next = timer - 1
 	
 	return instances()
 
 
 def APU_Triangle(				
-	CLK, APU_CE, RW10, Address, Data_write,
+	CLK, RSTN, APU_CE, RW10, Address, Data_write,
 	ChipSelect, HalfFrame_CE, QuarterFrame_CE,
 	PCM_out):
 	

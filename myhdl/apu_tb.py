@@ -17,7 +17,7 @@ NES_CLK_period = 46 # ns
 import sys
 import os
 
-assert len(sys.argv) >= 2, "Usage: {} FILE.NSF [SONGNUMBER]".format(sys.argv[0])
+#assert len(sys.argv) >= 2, "Usage: {} FILE.NSF [SONGNUMBER]".format(sys.argv[0])
 rom_filename = sys.argv[1]
 base_filename, _ = os.path.splitext(rom_filename)
 start_song = 0 if len(sys.argv) < 3 else sys.argv[2]
@@ -32,7 +32,7 @@ def APU_TB():
 	cpu_bus.PHI2 = Signal(True)
 
 	ac97 = AC97_WavWriter(PCM, wav_filename)
-	apu = APU_Main(cpu_bus.CLK, Signal(True), cpu_bus.PHI2, cpu_bus.RW10,
+	apu = APU_Main(cpu_bus.CLK, cpu_bus.RSTN, Signal(True), cpu_bus.PHI2, cpu_bus.RW10,
 		cpu_bus.Address, cpu_bus.Data_read, cpu_bus.Data_write,
 		APU_Interrupt, PCM)
 
@@ -53,9 +53,9 @@ def convert():
 	phi1 = Signal(False)
 	interrupt = Signal(False)
 	pcm = Signal(intbv()[8:0])
-	toVerilog(APU_Main, cpu_bus.CLK, phi1, cpu_bus.PHI2, cpu_bus.RW10,
+	toVerilog(APU_Main, cpu_bus.CLK, cpu_bus.RSTN, phi1, cpu_bus.PHI2, cpu_bus.RW10,
 		cpu_bus.Address, cpu_bus.Data_read, cpu_bus.Data_write,
 		interrupt, pcm)
 
-#convert()
+convert()
 Simulation(APU_TB()).run()
