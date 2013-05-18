@@ -25,9 +25,13 @@ entity Genesys_NES is
     AUDSDO : out  STD_LOGIC;
     AUDSYNC : out  STD_LOGIC;
     AUDRST : out  STD_LOGIC;
+	 
+	 JA : inout std_logic_vector(7 downto 0);
+	 JB : inout std_logic_vector(7 downto 0);
 
     BTN : in std_logic_vector(6 downto 0);
-    SW  : in std_logic_vector(7 downto 0)
+    SW  : in std_logic_vector(7 downto 0);
+	 LED : out std_logic_vector(7 downto 0)
 
     );
 end Genesys_NES;
@@ -103,6 +107,7 @@ architecture Behavioral of Genesys_NES is
 
   signal APU_PCM : std_logic_vector(7 downto 0);
   signal AC97_PCM : std_logic_vector(15 downto 0);
+  signal PCM_test : std_logic_vector(15 downto 0);
 
   signal Controller_Strobe : std_logic;
   signal Controller1_Clock : std_logic;
@@ -139,17 +144,20 @@ begin
     variable Controller1_Clock_delay : std_logic;
   begin
     if rising_edge(NES_Clock) then
-      if Controller_Strobe = '1' then
-        -- Order of NES Controller byte: RIGHT, LEFT, DOWN, UP, START, SELECT, B, A
-        
-        Controller1_ShiftRegister <= not BTN(3) & not BTN(5) & not BTN(4) & not BTN(2) & not BTN(6) & "1" & not BTN(1) & not BTN(0);
-      elsif Controller1_Clock = '1' and Controller1_Clock_delay = '0' then  -- detect rising edge
-        Controller1_ShiftRegister <= "1" & Controller1_ShiftRegister(7 downto 1);
+      if Controller1_Clock = '1' and Controller1_Clock_delay = '0' then  -- detect rising edge
+        Controller1_ShiftRegister <= JB(3) & Controller1_ShiftRegister(7 downto 1);
       end if;
 
       Controller1_Clock_delay := Controller1_Clock;
     end if;
   end process;
+  
+  JA <= APU_PCM;
+  JB(1) <= Controller1_Clock;
+  JB(0) <= Controller_Strobe;
+  
+  LED <= Controller1_ShiftRegister;
+  
 
 
   FRAMEBUFFER_READ : process (TFT_Clock)
@@ -167,9 +175,7 @@ begin
       end if;
     end if;
   end process;
-  
-  
-
+ 
   nes : NES_Mainboard port map (
     clk  => NES_Clock,
     rstn => RSTN,
@@ -184,7 +190,7 @@ begin
     Controller1_Clock => Controller1_Clock,
     Controller2_Clock => Controller2_Clock,
 
-    Controller1_Data0_N => Controller1_ShiftRegister(0),
+    Controller1_Data0_N => JB(3),
     Controller1_Data1_N => '1',
     Controller1_Data2_N => '1',
     Controller2_Data0_N => '1',
@@ -215,6 +221,14 @@ begin
       );
 		
 	AC97_PCM <= APU_PCM & X"00";
+	--LED <= APU_PCM;
+	
+	process (CLK)
+	begin
+		if rising_edge(CLK) then
+			--PCM_test <= std_logic_vector(unsigned(PCM_test) + 1);
+		end if;
+	end process;
 		
 	ac97 : AC97_Output
 	  port map (
