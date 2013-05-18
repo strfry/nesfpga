@@ -45,17 +45,46 @@ architecture arch of CartridgeROM is
 		douta : OUT STD_LOGIC_VECTOR(7 DOWNTO 0)
 	);
 	END COMPONENT;
+	
+	COMPONENT prg_rom_smb
+	PORT (
+		clka : IN STD_LOGIC;
+		addra : IN STD_LOGIC_VECTOR(14 DOWNTO 0);
+		douta : OUT STD_LOGIC_VECTOR(7 DOWNTO 0)
+	);
+	END COMPONENT;
 
+	COMPONENT chr_rom_smb
+	PORT (
+		clka : IN STD_LOGIC;
+		addra : IN STD_LOGIC_VECTOR(12 DOWNTO 0);
+		douta : OUT STD_LOGIC_VECTOR(7 DOWNTO 0)
+	);
+	END COMPONENT;
 begin
-
-prg : prg_rom_NESStress
+--
+--prg : prg_rom_NESStress
+--  PORT MAP (
+--    clka => clk,
+--    addra => PRG_Address,
+--    douta => PRG_Data
+--  );
+--
+--chr : chr_rom_NEStress
+--  PORT MAP (
+--    clka => clk,
+--    addra => std_logic_vector(CHR_Address(12 downto 0)),
+--    douta => CHR_Data
+--  );
+  
+prg : prg_rom_smb
   PORT MAP (
     clka => clk,
     addra => PRG_Address,
     douta => PRG_Data
   );
 
-chr : chr_rom_NEStress
+chr : chr_rom_smb
   PORT MAP (
     clka => clk,
     addra => std_logic_vector(CHR_Address(12 downto 0)),
