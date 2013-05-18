@@ -28,11 +28,13 @@ def APU_TB():
 	PCM = Signal(intbv()[8:])
 	cpu_bus = CPU_Bus()
 
-	clk_gen = CLK_Gen(cpu_bus.CLK, NES_CLK_period * 12)
-	cpu_bus.PHI2 = Signal(True)
+	clk_gen = CLK_Gen(cpu_bus.CLK, NES_CLK_period)
+	cpu_bus.PHI2_CE = Signal(True)
+	phi2_cnt = Signal(0)
+	
 
 	ac97 = AC97_WavWriter(PCM, wav_filename)
-	apu = APU_Main(cpu_bus.CLK, cpu_bus.RSTN, Signal(True), cpu_bus.PHI2, cpu_bus.RW10,
+	apu = APU_Main(cpu_bus.CLK, cpu_bus.RSTN, cpu_bus.PHI2_CE, cpu_bus.RW10,
 		cpu_bus.Address, cpu_bus.Data_read, cpu_bus.Data_write,
 		APU_Interrupt, PCM)
 
@@ -44,16 +46,19 @@ def APU_TB():
 
 	@always(cpu_bus.CLK.posedge)
 	def cpu_step():
-		cpu.play_cycle()
+		if cpu_bus.PHI2_CE:
+			cpu.play_cycle()
+
+		phi2_cnt.next = (phi2_cnt + 1) % 12
+		cpu_bus.PHI2_CE.next = phi2_cnt == 0
 
 	return instances(), cpu_bus.instances
 
 def convert():
 	cpu_bus = CPU_Bus()
-	phi1 = Signal(False)
 	interrupt = Signal(False)
 	pcm = Signal(intbv()[8:0])
-	toVerilog(APU_Main, cpu_bus.CLK, cpu_bus.RSTN, phi1, cpu_bus.PHI2, cpu_bus.RW10,
+	toVerilog(APU_Main, cpu_bus.CLK, cpu_bus.RSTN, cpu_bus.PHI2_CE, cpu_bus.RW10,
 		cpu_bus.Address, cpu_bus.Data_read, cpu_bus.Data_write,
 		interrupt, pcm)
 

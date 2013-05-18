@@ -4,8 +4,8 @@ from myhdl import *
 class CPU_Bus(object):
 	def __init__(self, AddressWidth=16):
 		self.CLK = Signal(False)
-		self.RSTN = Signal(False)
-		self.PHI2 = Signal(False)
+		self.RSTN = Signal(True)
+		self.PHI2_CE = Signal(False)
 		self.RW10 = Signal(True)
 
 		self.Address = Signal(intbv()[AddressWidth:])
@@ -18,7 +18,7 @@ class CPU_Bus(object):
 
 		@always(self.CLK.posedge)
 		def write_proc():
-			if self.PHI2:
+			if self.PHI2_CE:
 				if self.write_queue:
 					a, d = self.write_queue.pop(0)
 					self.Address.next = a

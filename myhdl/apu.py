@@ -7,7 +7,6 @@ NES_CLK_period = 46 * 12
 def APU_Main(
 		CLK,
 		RSTN, 
-		PHI1_CE,
 		PHI2_CE,
 		RW10,
 
@@ -35,16 +34,19 @@ def APU_Main(
 	PCM_noise = Signal(intbv()[4:0])
 	PCM_triangle = Signal(intbv()[4:0])
 
-	frameCounter = APU_FrameCounter(CLK, APU_CE, RW10, Address, Data_write, HalfFrame_CE, QuarterFrame_CE, Interrupt)
-	pulse1 = APU_Pulse(CLK, RSTN, APU_CE, RW10, Address, Data_write, Pulse1_CS, HalfFrame_CE, QuarterFrame_CE, PCM_pulse1)
-	pulse2 = APU_Pulse(CLK, RSTN, APU_CE, RW10, Address, Data_write, Pulse2_CS, HalfFrame_CE, QuarterFrame_CE, PCM_pulse2)
-	noise = APU_Noise(CLK, RSTN, APU_CE, RW10, Address, Data_write, Noise_CS, HalfFrame_CE, QuarterFrame_CE, PCM_noise)
-	triangle = APU_Triangle(CLK, RSTN, APU_CE, RW10, Address, Data_write, Triangle_CS, HalfFrame_CE, QuarterFrame_CE, PCM_triangle)
+	frameCounter = APU_FrameCounter(CLK, PHI2_CE, APU_CE, RW10, Address, Data_write, HalfFrame_CE, QuarterFrame_CE, Interrupt)
+	pulse1 = APU_Pulse(CLK, RSTN, PHI2_CE, APU_CE, RW10, Address, Data_write, Pulse1_CS, HalfFrame_CE, QuarterFrame_CE, PCM_pulse1)
+	pulse2 = APU_Pulse(CLK, RSTN, PHI2_CE, APU_CE, RW10, Address, Data_write, Pulse2_CS, HalfFrame_CE, QuarterFrame_CE, PCM_pulse2)
+	noise = APU_Noise(CLK, RSTN, PHI2_CE, APU_CE, RW10, Address, Data_write, Noise_CS, HalfFrame_CE, QuarterFrame_CE, PCM_noise)
+	triangle = APU_Triangle(CLK, RSTN, PHI2_CE, APU_CE, RW10, Address, Data_write, Triangle_CS, HalfFrame_CE, QuarterFrame_CE, PCM_triangle)
 
 	@always(CLK.posedge)
 	def ce():
-		if PHI1_CE:
+		if PHI2_CE:
 			APU_CE_cnt.next = not APU_CE_cnt
+#			print "    CE", APU_CE
+#		else:
+#			print "NOT CE", APU_CE
 
 	@always_comb
 	def chipselect():
@@ -52,7 +54,7 @@ def APU_Main(
 		Pulse2_CS.next = 0x4004 <= Address and Address < 0x4008
 		Triangle_CS.next = 0x4008 <= Address and Address < 0x400C
 		Noise_CS.next = 0x400C <= Address and Address < 0x4010
-		APU_CE.next = PHI1_CE and APU_CE_cnt
+		APU_CE.next = PHI2_CE and APU_CE_cnt
 
 		PCM_out.next = PCM_pulse1 + PCM_pulse2 + PCM_noise + PCM_triangle
 
@@ -61,7 +63,7 @@ def APU_Main(
 	
 
 def APU_FrameCounter(
-	CLK, APU_CE, RW10, Address, Data_write,
+	CLK, PHI2_CE, APU_CE, RW10, Address, Data_write,
 	HalfFrame_CE, QuarterFrame_CE, Interrupt):
 
 	timer = Signal(intbv()[15:0])
@@ -70,7 +72,7 @@ def APU_FrameCounter(
 
 	@always(CLK.posedge)
 	def logic():
-		if APU_CE and not RW10 and Address == 0x4017:
+		if PHI2_CE and not RW10 and Address == 0x4017:
 			Mode.next = Data_write[7]
 			InterruptInhibit.next = Data_write[6]
 
@@ -144,7 +146,7 @@ def APU_Envelope(
 	return instances()
 
 def APU_Pulse(
-	CLK, RSTN, APU_CE, RW10, Address, Data_write,
+	CLK, RSTN, PHI2_CE, APU_CE, RW10, Address, Data_write,
 	ChipSelect, HalfFrame_CE, QuarterFrame_CE,
 	PCM_out):
 
@@ -173,7 +175,7 @@ def APU_Pulse(
 	@always(CLK.posedge)
 	def logic():
 		if not RSTN:
-			sequencer.next = "00001111"
+			sequencer.next = intbv("00001111")
 		else:
 			if QuarterFrame_CE:
 				EnvelopeStartFlag.next = False
@@ -190,7 +192,7 @@ def APU_Pulse(
 				else:
 					timer.next = timer - 1
 			
-			if APU_CE and RW10 == 0 and ChipSelect:
+			if PHI2_CE and RW10 == 0 and ChipSelect:
 				if Address[2:0] == 0x0:
 					DutyCycle.next = Data_write[8:6]
 					
@@ -240,7 +242,7 @@ def LengthCounter(
 	return instances()
 
 def APU_Noise(
-	CLK, RSTN, APU_CE, RW10, Address, Data_write,
+	CLK, RSTN, PHI2_CE, APU_CE, RW10, Address, Data_write,
 	ChipSelect, HalfFrame_CE, QuarterFrame_CE,
 	PCM_out):
 
@@ -276,7 +278,7 @@ def APU_Noise(
 	
 			LengthCounterLoadFlag.next = False
 	
-			if APU_CE and RW10 == 0 and ChipSelect:
+			if PHI2_CE and RW10 == 0 and ChipSelect:
 				if Address[2:0] == 0x0:
 					LengthCounterHalt.next = Data_write[5]
 					EnvelopeConstantFlag.next = Data_write[4]
@@ -306,7 +308,7 @@ def APU_Noise(
 
 
 def APU_Triangle(				
-	CLK, RSTN, APU_CE, RW10, Address, Data_write,
+	CLK, RSTN, PHI2_CE, APU_CE, RW10, Address, Data_write,
 	ChipSelect, HalfFrame_CE, QuarterFrame_CE,
 	PCM_out):
 	
@@ -338,7 +340,7 @@ def APU_Triangle(
 
 		LengthCounterLoadFlag.next = False
 
-		if APU_CE and RW10 == 0 and ChipSelect:
+		if PHI2_CE and RW10 == 0 and ChipSelect:
 			if Address[2:0] == 0x0:
 				LengthCounterHalt.next = Data_write[7]
 				linearCounterLoad.next = Data_write[7:0]

@@ -292,8 +292,8 @@ end process DMATransfer;
 	APU : APU_Main
 	port map (
 		CLK => Global_Clk,
-		PHI1_CE => PHI1_CE,
-		PHI2_CE => '1',
+		RSTN => Reset_N,
+		PHI2_CE => ReadOKSignal,
 		RW10 => RW_10,
 		Address => Address,
 		--Data_read => APU_Data,

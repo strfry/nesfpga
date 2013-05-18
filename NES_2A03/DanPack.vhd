@@ -55,7 +55,7 @@ package Pack_2A03 is
 	component APU_Main is
 	port (
 	     CLK: in std_logic;
-        PHI1_CE: in std_logic;
+		  RSTN : in std_logic;
         PHI2_CE: in std_logic;
         RW10: in std_logic;
         Address: in std_logic_vector(15 downto 0);
