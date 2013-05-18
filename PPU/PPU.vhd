@@ -1,10 +1,5 @@
---------------------------------------------------------------------------------
--- Entity: NES_2C02
--- Date:2011-10-24  
--- Author: jonathansieber     
 --
--- Description ${cursor}
---------------------------------------------------------------------------------
+
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -42,12 +37,14 @@ architecture arch of NES_2C02 is
   -- Internal H/V Counters
   signal HPOS : integer range 0 to 340 := 0;
   signal VPOS : integer range 0 to 261 := 0;
-  
-  
-  signal Fine_HPOS : integer range 0 to 7;
 
+  -- Nes Clock / 4 Clock divider
   signal CE_cnt : unsigned(1 downto 0) := "00";
   signal CE     : std_logic;
+  
+  -- Specifies the scrolling offset within an 8 bit block
+  signal Fine_HPOS : integer range 0 to 7;
+
 
   signal VBlankFlag    : std_logic := '0';
   signal HitSpriteFlag : std_logic := '0';
