@@ -150,15 +150,19 @@ class Xilinx(object):
     if not os.path.exists(self.path):
       os.mkdir(self.path)
 
-    self.fpga.createUcf()
+#    self.fpga.createUcf()
     cmd = 'xtclsh ' + tcl_name
     print 'running command: ', cmd
-    r, w, e = popen2.popen3(cmd)
-    print 'errors: ', e.readlines()
-    print 'reply: ', r.readlines()
-    r.close()
-    e.close()
-    w.close()
+
+    import subprocess
+    subprocess.call(cmd, shell=True)
+
+#    r, w, e = popen2.popen3(cmd)
+#    print 'errors: ', e.readlines()
+#    print 'reply: ', r.readlines()
+#    r.close()
+#    e.close()
+#    w.close()
 
   def setFpga(self, fpga):
     self.fpga = fpga
@@ -234,13 +238,3 @@ class Fpga(object):
     s += 'Package: %s\n'% self.package
     s += 'Speed: %s\n'% self.speed
     return s
-
-if __name__ == '__main__':
- 
-  fpga = Fpga()
-
-  fpga.setPin('clk50', 'P80', 'lvttl', 'slow', 4)
-  fpga.setPin('led', 'P71')
-  fpga.setPin('btn', 'P77')
-
-  fpga.createUcf()
