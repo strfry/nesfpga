@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Set up Xilinx environment variable
 
 XILINX_SETTINGS_PATH = "/opt/Xilinx/14.5/ISE_DS/settings64.sh"
