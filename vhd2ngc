@@ -1,0 +1,2 @@
+#!/bin/sh
+./run_xst.sh run -ifn $1 -ifmt VHDL -ofn $2 -ofmt NGC

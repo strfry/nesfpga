@@ -16,7 +16,9 @@ FUBAR=$FUBAR:$XILINX_HOME/lib/lin64/libAntlr.so
 FUBAR=$FUBAR:$XILINX_HOME/lib/lin64/libXst2_CoreData.so
 
 # Oh, and XST reads on stdin for more what should be command line parameters
-XST_PARAMS=$@
+XST_PARAMS="$@ "$(grep -E ^[^\#] $XST_CONFIG)
+
+echo $XST_PARAMS
 
 export LD_PRELOAD=$FUBAR
 echo $XST_PARAMS | xst
