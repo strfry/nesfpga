@@ -1,1 +1,7 @@
 WRITE IT!!!
+
+target flash settings: 
+- Parallel BPI Single Boot
+- Virtex 5 / 32M
+- 16 bit width
+- 28F256P30 (not 512, schematic is lying)
