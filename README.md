@@ -1,7 +1,8 @@
 NESFPGA
 =======
 
-This project 
+This project implements a simplified version of the
+Nintendo Entertainment System on an FPGA, that can execute Super Mario Bros.
 
 Getting Started
 ---------------
